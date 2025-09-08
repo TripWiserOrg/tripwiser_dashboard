@@ -1,0 +1,220 @@
+TRIPWISER ADMIN DASHBOARD - ALL API ENDPOINTS
+================================================
+
+Base URL: https://tripwiser-backend.onrender.com/api
+Alternative Dev URL: https://e2fb1ffcfa14.ngrok-free.app/api
+
+AUTHENTICATION ENDPOINTS
+========================
+POST /auth/login                    - Admin login with email/password
+POST /auth/logout                   - Admin logout
+POST /auth/refresh                  - Refresh JWT access token
+
+ADMIN USER MANAGEMENT ENDPOINTS
+==============================
+GET  /admin/users                   - Get all users (admin)
+GET  /admin/users/:id               - Get specific user details (admin)
+PUT  /admin/users/:id               - Update user information (admin)
+DELETE /admin/users/:id             - Delete user account (admin)
+
+ADMIN TRIP MANAGEMENT ENDPOINTS
+==============================
+GET  /admin/trips                   - Get all trips (admin)
+GET  /admin/trips/:id               - Get specific trip details (admin)
+PUT  /admin/trips/:id               - Update trip information (admin)
+DELETE /admin/trips/:id             - Delete trip (admin)
+
+ADMIN ANALYTICS & STATISTICS ENDPOINTS
+=====================================
+GET  /admin/analytics               - Get platform statistics and metrics
+
+ADMIN SYSTEM MONITORING ENDPOINTS
+=================================
+GET  /admin/system/health           - Get system health status
+GET  /admin/system/logs             - Get system logs
+GET  /admin/system/metrics          - Get system performance metrics
+
+ADMIN NOTIFICATION ENDPOINTS
+===========================
+POST /admin/notifications/broadcast - Send broadcast notification to users
+
+ADMIN PAYMENT ENDPOINTS
+======================
+GET  /admin/payments/overview       - Get payment and revenue overview
+
+ADMIN CONTENT MODERATION ENDPOINTS
+=================================
+GET  /admin/content/moderate        - Get content for moderation
+PUT  /admin/content/:id/moderate    - Moderate content (approve/reject/delete)
+
+ADDITIONAL ENDPOINTS (Available but not currently used in dashboard)
+===================================================================
+
+AUTHENTICATION & USER MANAGEMENT
+===============================
+POST /auth/register                 - Register new user
+POST /auth/google                   - Google OAuth login
+POST /auth/apple                    - Apple OAuth login
+GET  /auth/me                       - Get current user profile
+GET  /auth/test                     - Test auth system
+
+TRIP MANAGEMENT
+===============
+GET    /trips                       - Get all user trips (owned + collaborated)
+POST   /trips                       - Create new trip
+GET    /trips/:id                   - Get specific trip details
+PUT    /trips/:id                   - Update trip
+DELETE /trips/:id                   - Delete trip
+POST   /trips/:id/collaborators     - Add collaborator
+DELETE /trips/:id/collaborators/:userId - Remove collaborator
+POST   /trips/:id/share             - Share trip
+GET    /trips/:id/summary           - Get trip summary
+
+PACKING LISTS
+=============
+GET    /packing-lists/trip/:tripId  - Get packing list for trip
+POST   /packing-lists               - Create packing list
+PUT    /packing-lists/:id           - Update packing list
+POST   /packing-lists/:id/categories - Add category
+PUT    /packing-lists/:id/categories/:categoryId - Update category
+DELETE /packing-lists/:id/categories/:categoryId - Delete category
+POST   /packing-lists/:id/categories/:categoryId/items - Add item
+PUT    /packing-lists/:id/categories/:categoryId/items/:itemId - Update item
+DELETE /packing-lists/:id/categories/:categoryId/items/:itemId - Delete item
+PATCH  /packing-lists/:id/categories/:categoryId/items/:itemId/toggle - Toggle item
+
+ITINERARY MANAGEMENT
+===================
+GET    /itinerary/trip/:tripId      - Get itinerary for trip
+POST   /itinerary                   - Create itinerary
+PUT    /itinerary/:id               - Update itinerary
+GET    /itinerary/generate/:tripId  - Generate AI itinerary
+POST   /itinerary/:id/days          - Add day to itinerary
+PUT    /itinerary/:id/days/:dayId   - Update day
+DELETE /itinerary/:id/days/:dayId   - Delete day
+POST   /itinerary/:id/days/:dayId/activities - Add activity
+PUT    /itinerary/:id/days/:dayId/activities/:activityId - Update activity
+DELETE /itinerary/:id/days/:dayId/activities/:activityId - Delete activity
+
+JOURNAL MANAGEMENT
+=================
+GET    /journals/trip/:tripId       - Get journal for trip
+POST   /journals                    - Create journal
+PUT    /journals/:id                - Update journal
+POST   /journals/:id/entries        - Add journal entry
+PUT    /journals/:id/entries/:entryId - Update entry
+DELETE /journals/:id/entries/:entryId - Delete entry
+POST   /journals/:id/entries/:entryId/links - Add link to entry
+
+USER MANAGEMENT
+==============
+GET    /users/profile               - Get user profile
+PUT    /users/profile               - Update user profile
+GET    /users/preferences           - Get user preferences
+PUT    /users/preferences           - Update preferences
+GET    /users/plan                  - Get user plan
+PUT    /users/plan                  - Update user plan
+GET    /users/stats                 - Get user statistics
+GET    /users/content               - Get user content
+GET    /users/:id                   - Get user by ID
+POST   /users/block                 - Block user
+DELETE /users/block/:userId         - Unblock user
+
+DISCOVERY & SOCIAL FEATURES
+==========================
+GET    /discovery/posts             - Get discovery posts
+POST   /discovery/posts             - Create discovery post
+GET    /discovery/posts/:id         - Get specific post
+PUT    /discovery/posts/:id         - Update post
+DELETE /discovery/posts/:id         - Delete post
+POST   /discovery/posts/:id/like    - Like post
+DELETE /discovery/posts/:id/like    - Unlike post
+POST   /discovery/posts/:id/share   - Share post
+GET    /discovery/trending          - Get trending destinations
+GET    /discovery/search            - Search posts
+
+TEMPLATES & TIPS
+================
+GET    /templates                   - Get available templates
+GET    /templates/saved             - Get saved templates
+POST   /templates/saved             - Save template
+DELETE /templates/saved/:id         - Remove saved template
+POST   /templates/apply/:id         - Apply template to trip
+GET    /templates/my                - Get user's templates
+POST   /templates/create            - Create template
+GET    /tips                        - Get travel tips
+POST   /tips                        - Create tip
+GET    /tips/saved                  - Get saved tips
+POST   /tips/saved                  - Save tip
+
+WEATHER & EXTERNAL SERVICES
+===========================
+GET    /weather/current/:location   - Get current weather
+GET    /weather/forecast/:location  - Get weather forecast
+GET    /images/search               - Search images
+POST   /images/upload               - Upload image
+
+PAYMENTS & SUBSCRIPTIONS
+========================
+GET    /payments/status             - Get payment status
+GET    /payments/history            - Get payment history
+POST   /payments/apple/verify       - Verify Apple payment
+POST   /payments/google/verify      - Verify Google payment
+
+NOTIFICATIONS
+=============
+GET    /notifications               - Get user notifications
+PUT    /notifications/:id/read      - Mark notification as read
+PUT    /notifications/read-all      - Mark all as read
+GET    /notifications/preferences   - Get notification preferences
+PUT    /notifications/preferences   - Update preferences
+
+MODERATION & REPORTS
+===================
+POST   /reports                     - Report content
+GET    /reports                     - Get reports (admin)
+PUT    /reports/:id                 - Update report status
+
+ENDPOINT USAGE IN DASHBOARD
+==========================
+Currently Used (15 endpoints):
+- POST /auth/login
+- POST /auth/logout  
+- POST /auth/refresh
+- GET  /admin/analytics
+- GET  /admin/users
+- GET  /admin/users/:id
+- PUT  /admin/users/:id
+- DELETE /admin/users/:id
+- GET  /admin/trips
+- GET  /admin/trips/:id
+- PUT  /admin/trips/:id
+- DELETE /admin/trips/:id
+- GET  /admin/system/health
+- GET  /admin/system/logs
+- GET  /admin/system/metrics
+- POST /admin/notifications/broadcast
+- GET  /admin/payments/overview
+- GET  /admin/content/moderate
+- PUT  /admin/content/:id/moderate
+
+Available but not used (80+ endpoints):
+- All user-facing endpoints for trips, packing lists, itineraries, journals
+- Discovery and social features
+- Templates and tips
+- Weather and external services
+- User management and preferences
+- Notifications and reports
+
+AUTHENTICATION
+==============
+All admin endpoints require JWT Bearer token authentication:
+Authorization: Bearer <access_token>
+
+Token refresh is handled automatically by the API service interceptors.
+
+ERROR HANDLING
+==============
+- 401 Unauthorized: Automatic token refresh attempt
+- Failed refresh: Redirect to login page
+- Other errors: Displayed to user with appropriate messaging

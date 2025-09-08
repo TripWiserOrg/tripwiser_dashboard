@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/static/css/main.5dbcffe5.css",
+    "main.js": "/static/js/main.bb031bf6.js",
+    "static/media/Sriracha-Regular.ttf": "/static/media/Sriracha-Regular.791e4f14671f56ad8ef5.ttf",
+    "static/media/RacingSansOne-Regular.ttf": "/static/media/RacingSansOne-Regular.c4f165be512469c89885.ttf",
+    "index.html": "/index.html",
+    "main.5dbcffe5.css.map": "/static/css/main.5dbcffe5.css.map",
+    "main.bb031bf6.js.map": "/static/js/main.bb031bf6.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.5dbcffe5.css",
+    "static/js/main.bb031bf6.js"
+  ]
+}
