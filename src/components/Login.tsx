@@ -44,17 +44,19 @@ export function Login({ onLogin }: LoginProps) {
       }}
     >
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
       
       {/* Login Card */}
-      <Card className="w-full max-w-md relative z-10 animate-fade-in shadow-2xl border-0 bg-white/95 backdrop-blur-md">
-        <CardHeader className="text-center pb-lg">
+      <Card className="w-full max-w-lg relative z-10 animate-fade-in shadow-2xl border-0 bg-white">
+        <CardHeader className="text-center pb-lg bg-white">
           <div className="mx-auto mb-lg">
-            <div className="h-20 w-20 rounded-2xl bg-gradient-primary flex items-center justify-center mx-auto shadow-lg">
+            <div className="h-24 w-24 rounded-2xl bg-gradient-primary flex items-center justify-center mx-auto shadow-lg">
               <img 
                 src="/assets/logo.png" 
                 alt="TripWiser Logo" 
-                className="h-12 w-12 object-contain"
+                height={150}
+                width={150}
+                className="object-contain"
               />
             </div>
           </div>
@@ -63,8 +65,8 @@ export function Login({ onLogin }: LoginProps) {
           </CardTitle>
           <p className="text-muted-foreground mt-sm">Sign in to your admin dashboard</p>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-lg">
+        <CardContent className="bg-white">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <Input
               label="Email"
               type="email"
@@ -72,6 +74,7 @@ export function Login({ onLogin }: LoginProps) {
               onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
               placeholder="admin@tripwiser.com"
               required
+              className="h-14 text-base"
             />
             <Input
               label="Password"
@@ -80,6 +83,7 @@ export function Login({ onLogin }: LoginProps) {
               onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
               placeholder="Enter your password"
               required
+              className="h-14 text-base"
             />
             {error && (
               <div className="text-sm text-destructive bg-destructive/10 p-md rounded-lg border border-destructive/20 flex items-center gap-sm">
@@ -91,12 +95,12 @@ export function Login({ onLogin }: LoginProps) {
             )}
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold" 
+              className="w-full h-14 text-lg font-semibold" 
               disabled={isLoading}
             >
               {isLoading ? (
                 <div className="flex items-center gap-sm">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                   Signing in...
                 </div>
               ) : (

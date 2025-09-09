@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { StatCard } from './ui/StatCard';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { apiService } from '../services/api';
+import { AffiliateDashboard } from './AffiliateDashboard';
 import { 
   Users, 
   MapPin, 
@@ -15,10 +16,13 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Globe
+  Globe,
+  Link as LinkIcon
 } from 'lucide-react';
 
 export function Dashboard() {
+  const [showAffiliateDashboard, setShowAffiliateDashboard] = useState(false);
+
   const { data: platformStats, isLoading, error } = useQuery(
     'platformStats',
     () => apiService.getPlatformStats(),
@@ -67,6 +71,38 @@ export function Dashboard() {
     }
   );
 
+  
+  const getSystemHealthVariant = (status: string) => {
+    switch (status) {
+      case 'healthy':
+        return 'success';
+      case 'warning':
+        return 'warning';
+      case 'critical':
+        return 'destructive';
+      default:
+        return 'default';
+    }
+  };
+
+  const getSystemHealthIcon = (status: string) => {
+    switch (status) {
+      case 'healthy':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'warning':
+        return <Clock className="h-4 w-4" />;
+      case 'critical':
+        return <AlertTriangle className="h-4 w-4" />;
+      default:
+        return <Activity className="h-4 w-4" />;
+    }
+  };
+
+
+  if (showAffiliateDashboard) {
+    return <AffiliateDashboard onBack={() => setShowAffiliateDashboard(false)} />;
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -95,32 +131,6 @@ export function Dashboard() {
     );
   }
 
-  const getSystemHealthVariant = (status: string) => {
-    switch (status) {
-      case 'healthy':
-        return 'success';
-      case 'warning':
-        return 'warning';
-      case 'critical':
-        return 'destructive';
-      default:
-        return 'default';
-    }
-  };
-
-  const getSystemHealthIcon = (status: string) => {
-    switch (status) {
-      case 'healthy':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'warning':
-        return <Clock className="h-4 w-4" />;
-      case 'critical':
-        return <AlertTriangle className="h-4 w-4" />;
-      default:
-        return <Activity className="h-4 w-4" />;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -132,7 +142,7 @@ export function Dashboard() {
                 <img 
                   src="/assets/logo.png" 
                   alt="TripWiser Logo" 
-                  className="h-8 w-8 object-contain"
+                  className="max-h-8 w-8 object-contain"
                 />
               </div>
               <div>
@@ -259,11 +269,15 @@ export function Dashboard() {
                   </div>
                   <span className="text-sm font-medium">Manage Users</span>
                 </Button>
-                <Button variant="outline" className="h-auto p-lg flex flex-col items-center gap-sm hover:bg-itinerary/5 hover:border-itinerary/20">
-                  <div className="h-10 w-10 rounded-lg bg-itinerary/10 flex items-center justify-center">
-                    <MapPin className="h-5 w-5 text-itinerary" />
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-lg flex flex-col items-center gap-sm hover:bg-primary/5 hover:border-primary/20"
+                  onClick={() => setShowAffiliateDashboard(true)}
+                >
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <LinkIcon className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="text-sm font-medium">View Trips</span>
+                  <span className="text-sm font-medium">Affiliate</span>
                 </Button>
                 <Button variant="outline" className="h-auto p-lg flex flex-col items-center gap-sm hover:bg-warning/5 hover:border-warning/20">
                   <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">

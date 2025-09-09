@@ -10,12 +10,12 @@ export function Input({ label, error, className = '', ...props }: InputProps) {
   return (
     <div className="w-full space-y-sm">
       {label && (
-        <label className="block text-sm font-medium text-foreground">
+        <label className="block text-base font-semibold text-foreground mb-2">
           {label}
         </label>
       )}
       <input
-        className={`flex h-10 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted ${error ? 'border-destructive focus-visible:ring-destructive' : ''} ${className}`}
+        className={`flex w-full rounded-lg border border-border bg-white px-4 py-3 text-base text-foreground placeholder:text-muted-foreground transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted ${error ? 'border-destructive focus-visible:ring-destructive' : ''} ${className}`}
         {...props}
       />
       {error && (

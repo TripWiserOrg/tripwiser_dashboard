@@ -6,6 +6,7 @@ A comprehensive admin dashboard for managing the TripWiser travel platform. Buil
 
 - **System Overview**: Real-time platform statistics and health monitoring
 - **User Management**: View and manage user accounts, plans, and activity
+- **Affiliate System**: Generate and manage affiliate links for elite gifts and influencer referrals
 - **Content Moderation**: Monitor and moderate user-generated content
 - **Analytics**: Business intelligence and platform insights
 - **System Monitoring**: Server health, API status, and performance metrics
@@ -76,18 +77,19 @@ This creates an optimized production build in the `build` folder.
 
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── ui/             # Base UI components (Card, Button, Input, etc.)
-│   ├── Dashboard.tsx   # Main dashboard component
-│   └── Login.tsx       # Authentication component
-├── services/           # API services and utilities
-│   └── api.ts         # API client with authentication
-├── types/             # TypeScript type definitions
-│   └── index.ts       # Shared types and interfaces
-├── App.tsx            # Main application component
-├── App.css            # Application styles
-├── index.tsx          # Application entry point
-└── index.css          # Global styles and design tokens
+├── components/              # Reusable UI components
+│   ├── ui/                 # Base UI components (Card, Button, Input, etc.)
+│   ├── Dashboard.tsx       # Main dashboard component
+│   ├── AffiliateDashboard.tsx # Affiliate system management
+│   └── Login.tsx           # Authentication component
+├── services/               # API services and utilities
+│   └── api.ts             # API client with authentication
+├── types/                 # TypeScript type definitions
+│   └── index.ts           # Shared types and interfaces
+├── App.tsx                # Main application component
+├── App.css                # Application styles
+├── index.tsx              # Application entry point
+└── index.css              # Global styles and design tokens
 ```
 
 ## Design System
@@ -115,7 +117,14 @@ The dashboard integrates with the TripWiser backend API:
 - Platform statistics and metrics
 - System health monitoring
 - Recent user and trip activity
-- Quick action buttons
+- Quick action buttons including affiliate system access
+
+### Affiliate System
+
+- **Link Generation**: Create elite gift and influencer affiliate links
+- **Link Management**: View, filter, and manage all affiliate links
+- **Analytics**: Track performance and conversion metrics
+- **User Management**: Select influencers for affiliate link generation
 
 ### Authentication
 

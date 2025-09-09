@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ApiResponse, PlatformStats, User, Trip, Notification } from '../types';
+import { ApiResponse, PlatformStats, User, Trip, Notification, AffiliateLink, AffiliateAnalytics, LinkGenerationData } from '../types';
 
 class ApiService {
   private api: AxiosInstance;
@@ -207,6 +207,41 @@ class ApiService {
   async moderateContent(id: string, action: 'approve' | 'reject' | 'delete') {
     const response = await this.api.put<ApiResponse<any>>(`/admin/content/${id}/moderate`, { action });
     return response.data.data;
+  }
+
+  // Affiliate System endpoints
+  async generateEliteGiftLink(data: LinkGenerationData): Promise<AffiliateLink> {
+    const response = await this.api.post<ApiResponse<{ affiliateLink: AffiliateLink }>>('/affiliate/generate-elite-link', data);
+    return response.data.data.affiliateLink;
+  }
+
+  async generateInfluencerLink(data: LinkGenerationData): Promise<AffiliateLink> {
+    const response = await this.api.post<ApiResponse<{ affiliateLink: AffiliateLink }>>('/affiliate/generate-influencer-link', data);
+    return response.data.data.affiliateLink;
+  }
+
+  async getAffiliateLinks(filters: { type?: string; status?: string } = {}): Promise<{ links: AffiliateLink[]; pagination: any }> {
+    const queryParams = new URLSearchParams();
+    if (filters.type) queryParams.append('type', filters.type);
+    if (filters.status) queryParams.append('status', filters.status);
+    
+    const response = await this.api.get<ApiResponse<{ links: AffiliateLink[]; pagination: any }>>(`/admin/affiliate/links?${queryParams}`);
+    return response.data.data;
+  }
+
+  async toggleLinkStatus(linkId: string): Promise<{ success: boolean; message: string }> {
+    const response = await this.api.put<ApiResponse<{ success: boolean; message: string }>>(`/admin/affiliate/links/${linkId}/toggle`);
+    return response.data.data;
+  }
+
+  async getAffiliateAnalytics(period: string = '30d'): Promise<AffiliateAnalytics> {
+    const response = await this.api.get<ApiResponse<AffiliateAnalytics>>(`/admin/affiliate/overview?period=${period}`);
+    return response.data.data;
+  }
+
+  async getInfluencers(): Promise<User[]> {
+    const response = await this.api.get<ApiResponse<{ users: User[] }>>('/users?role=influencer');
+    return response.data.data.users;
   }
 }
 

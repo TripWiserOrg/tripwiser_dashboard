@@ -100,3 +100,52 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
 }
+
+// Affiliate System Types
+export interface AffiliateLink {
+  id: string;
+  type: 'elite_gift' | 'influencer';
+  deepLink: string;
+  maxUses?: number;
+  usedCount: number;
+  expiresAt?: Date;
+  isActive: boolean;
+  description?: string;
+  influencerId?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AffiliateStats {
+  totalEliteGifts: number;
+  totalInfluencerReferrals: number;
+  totalLinks: number;
+  activeLinks: number;
+  totalConversions: number;
+}
+
+export interface AffiliateAnalytics {
+  summary: AffiliateStats;
+  conversionTrends: Array<{
+    date: string;
+    eliteGifts: number;
+    influencerReferrals: number;
+  }>;
+  topInfluencers: Array<{
+    influencerId: string;
+    influencerName: string;
+    referrals: number;
+    uniqueUsers: number;
+  }>;
+}
+
+export interface LinkGenerationData {
+  maxUses?: number;
+  expiresAt?: string;
+  description?: string;
+  influencerId?: string;
+}
