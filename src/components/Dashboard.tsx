@@ -25,27 +25,18 @@ export function Dashboard() {
 
   const { data: platformStats, isLoading, error } = useQuery(
     'platformStats',
-    () => apiService.getPlatformStats(),
-    {
-      refetchInterval: 30000, // Refetch every 30 seconds
-    }
+    () => apiService.getPlatformStats()
   );
 
   // Fetch system health and payment data separately
   const { data: systemHealth } = useQuery(
     'systemHealth',
-    () => apiService.getSystemHealth(),
-    {
-      refetchInterval: 30000, // Refetch every 30 seconds
-    }
+    () => apiService.getSystemHealth()
   );
 
   const { data: paymentOverview } = useQuery(
     'paymentOverview',
-    () => apiService.getPaymentOverview(),
-    {
-      refetchInterval: 30000, // Refetch every 30 seconds
-    }
+    () => apiService.getPaymentOverview()
   );
 
   // Debug logging

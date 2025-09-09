@@ -42,10 +42,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
   // Fetch affiliate analytics
   const { data: analytics, isLoading: analyticsLoading } = useQuery(
     'affiliateAnalytics',
-    () => apiService.getAffiliateAnalytics('30d'),
-    {
-      refetchInterval: 30000,
-    }
+    () => apiService.getAffiliateAnalytics('30d')
   );
 
   // Fetch affiliate links
@@ -54,17 +51,41 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
     () => apiService.getAffiliateLinks({
       type: filters.type !== 'all' ? filters.type : undefined,
       status: filters.status !== 'all' ? filters.status : undefined
-    }),
-    {
-      refetchInterval: 30000,
-    }
+    })
   );
 
-  // Fetch influencers for link generation
-  const { data: influencers } = useQuery(
-    'influencers',
-    () => apiService.getInfluencers()
-  );
+  // User search state
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Search users function
+  const searchUsers = async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const results = await apiService.searchUsers(query);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Failed to search users:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchUsers(userSearchQuery);
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, [userSearchQuery]);
 
   const handleGenerateLink = async (type: 'elite_gift' | 'influencer', data: LinkGenerationData) => {
     try {
@@ -92,18 +113,42 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    // You could add a toast notification here
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Link copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      // Fallback for older browsers
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Link copied to clipboard!');
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed:', fallbackErr);
+        alert('Failed to copy link. Please copy manually: ' + text);
+      }
+    }
   };
 
   const filteredLinks = linksData?.links?.filter(link => {
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
       return (
-        link.description?.toLowerCase().includes(searchTerm) ||
-        link.influencerId?.name.toLowerCase().includes(searchTerm) ||
-        link.influencerId?.email.toLowerCase().includes(searchTerm)
+        link.metadata?.description?.toLowerCase().includes(searchTerm) ||
+        (typeof link.influencerId === 'string' 
+          ? link.influencerId.toLowerCase().includes(searchTerm)
+          : (link.influencerId as any)?.name?.toLowerCase().includes(searchTerm) ||
+            (link.influencerId as any)?.email?.toLowerCase().includes(searchTerm)
+        )
       );
     }
     return true;
@@ -176,7 +221,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                 variant="default"
               />
               <StatCard
-                title="Influencer Referrals"
+                title="User Referrals"
                 value={analytics?.summary.totalInfluencerReferrals || 0}
                 description="Total referrals"
                 trend={{ value: 8, isPositive: true }}
@@ -215,7 +260,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                 <CardContent>
                   <div className="space-y-md">
                     {linksData?.links?.slice(0, 5).map((link) => (
-                      <div key={link.id} className="flex items-center justify-between p-md bg-muted/30 rounded-lg">
+                      <div key={link._id} className="flex items-center justify-between p-md bg-muted/30 rounded-lg">
                         <div className="flex items-center gap-md">
                           <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
                             link.type === 'elite_gift' ? 'bg-blue-100' : 'bg-green-100'
@@ -228,7 +273,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-foreground">
-                              {link.type === 'elite_gift' ? 'Elite Gift Link' : link.influencerId?.name || 'Influencer Link'}
+                              {link.type === 'elite_gift' ? 'Elite Gift Link' : 'User Link'}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {link.usedCount} uses
@@ -250,7 +295,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                     <div className="h-8 w-8 rounded-lg bg-success/10 flex items-center justify-center">
                       <Users className="h-4 w-4 text-success" />
                     </div>
-                    Top Influencers
+                    Top Users
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -278,7 +323,10 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
             <EliteGiftLinkForm onGenerate={(data) => handleGenerateLink('elite_gift', data)} />
             <InfluencerLinkForm 
-              influencers={influencers || []} 
+              searchQuery={userSearchQuery}
+              searchResults={searchResults}
+              isSearching={isSearching}
+              onSearchChange={setUserSearchQuery}
               onGenerate={(data) => handleGenerateLink('influencer', data)} 
             />
           </div>
@@ -392,23 +440,52 @@ function EliteGiftLinkForm({ onGenerate }: { onGenerate: (data: LinkGenerationDa
 
 // Influencer Link Generation Form
 function InfluencerLinkForm({ 
-  influencers, 
+  searchQuery,
+  searchResults,
+  isSearching,
+  onSearchChange,
   onGenerate 
 }: { 
-  influencers: User[];
+  searchQuery: string;
+  searchResults: User[];
+  isSearching: boolean;
+  onSearchChange: (query: string) => void;
   onGenerate: (data: LinkGenerationData) => void;
 }) {
   const [formData, setFormData] = useState<LinkGenerationData>({
-    influencerId: '',
+    influencerId: '', // This will be the user._id when selected
     maxUses: undefined,
     expiresAt: undefined,
     description: ''
   });
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.influencerId) return;
     onGenerate(formData);
+  };
+
+  const handleUserSelect = (user: User) => {
+    setSelectedUser(user);
+    setFormData(prevFormData => {
+      const userId = (user as any).id || user._id;
+      return {...prevFormData, influencerId: userId};
+    });
+    setShowSearchResults(false);
+    onSearchChange(user.name); // Update search query to show selected user
+  };
+
+  const handleSearchFocus = () => {
+    if (searchResults.length > 0) {
+      setShowSearchResults(true);
+    }
+  };
+
+  const handleSearchBlur = () => {
+    // Delay hiding to allow clicking on results
+    setTimeout(() => setShowSearchResults(false), 200);
   };
 
   return (
@@ -418,28 +495,77 @@ function InfluencerLinkForm({
           <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
             <Users className="h-4 w-4 text-green-600" />
           </div>
-          Generate Influencer Link
+          Generate User Affiliate Link
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-lg">
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-foreground mb-sm">
-              Select Influencer *
+              Search User by Name or Email *
             </label>
-            <select
-              value={formData.influencerId || ''}
-              onChange={(e) => setFormData({...formData, influencerId: e.target.value})}
-              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-              required
-            >
-              <option value="">Choose an influencer...</option>
-              {influencers.map(influencer => (
-                <option key={influencer._id} value={influencer._id}>
-                  {influencer.name} ({influencer.email})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Type name or email to search..."
+                value={searchQuery}
+                onChange={(e) => {
+                  onSearchChange(e.target.value);
+                  setSelectedUser(null);
+                  setFormData(prevFormData => ({...prevFormData, influencerId: ''}));
+                }}
+                onFocus={handleSearchFocus}
+                onBlur={handleSearchBlur}
+                className="pr-10"
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                </div>
+              )}
+            </div>
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {searchResults.map((user) => (
+                  <div
+                    key={(user as any).id || user._id}
+                    onClick={() => handleUserSelect(user)}
+                    className="p-3 hover:bg-muted/50 cursor-pointer border-b border-border last:border-b-0"
+                  >
+                    <div className="flex items-center gap-md">
+                      <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-semibold">
+                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                        <p className="text-xs text-muted-foreground">Plan: {user.plan}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Selected User Display */}
+            {selectedUser && (
+              <div className="mt-2 p-3 bg-muted/30 rounded-md">
+                <div className="flex items-center gap-md">
+                  <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-semibold">
+                    {selectedUser.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{selectedUser.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
+                  </div>
+                  <Badge variant={selectedUser.plan === 'elite' ? 'success' : selectedUser.plan === 'pro' ? 'warning' : 'secondary'}>
+                    {selectedUser.plan}
+                  </Badge>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -465,12 +591,24 @@ function InfluencerLinkForm({
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-sm">
+              Description (optional)
+            </label>
+            <Input
+              type="text"
+              placeholder="e.g., Holiday Campaign 2024"
+              value={formData.description || ''}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+            />
+          </div>
+
           <Button 
             type="submit" 
             className="w-full"
             disabled={!formData.influencerId}
           >
-            Generate Influencer Link
+            Generate User Affiliate Link
           </Button>
         </form>
       </CardContent>
@@ -573,18 +711,25 @@ function AffiliateLinksTable({
                 </tr>
               ) : (
                 links.map((link) => (
-                  <tr key={link.id} className="hover:bg-muted/30">
+                  <tr key={link._id} className="hover:bg-muted/30">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge variant={link.type === 'elite_gift' ? 'default' : 'success'}>
-                        {link.type === 'elite_gift' ? '🎁 Elite Gift' : '👥 Influencer'}
+                        {link.type === 'elite_gift' ? '🎁 Elite Gift' : '👥 User'}
                       </Badge>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-foreground">
                         {link.type === 'influencer' && link.influencerId ? (
                           <div>
-                            <div className="font-medium">{link.influencerId.name}</div>
-                            <div className="text-muted-foreground">{link.influencerId.email}</div>
+                            <div className="font-medium">
+                              {typeof link.influencerId === 'string' 
+                                ? `User ID: ${link.influencerId}` 
+                                : `User: ${(link.influencerId as any).name || 'Unknown'}`
+                              }
+                            </div>
+                            {typeof link.influencerId === 'object' && (link.influencerId as any).email && (
+                              <div className="text-muted-foreground">{(link.influencerId as any).email}</div>
+                            )}
                           </div>
                         ) : (
                           <div className="text-muted-foreground">Elite Gift Link</div>
@@ -625,7 +770,7 @@ function AffiliateLinksTable({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onToggleStatus(link.id)}
+                          onClick={() => onToggleStatus(link._id)}
                           className={link.isActive ? 'text-destructive hover:text-destructive/80' : 'text-success hover:text-success/80'}
                         >
                           {link.isActive ? <ToggleLeft className="h-4 w-4" /> : <ToggleRight className="h-4 w-4" />}
@@ -704,7 +849,7 @@ function AffiliateAnalyticsView({
                 <Users className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Influencer Referrals</p>
+                <p className="text-sm font-medium text-muted-foreground">User Referrals</p>
                 <p className="text-2xl font-semibold text-foreground">
                   {analytics?.summary.totalInfluencerReferrals || 0}
                 </p>
@@ -745,7 +890,7 @@ function AffiliateAnalyticsView({
 
         <Card className="card-hover">
           <CardHeader>
-            <CardTitle>Top Influencers</CardTitle>
+            <CardTitle>Top Users</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

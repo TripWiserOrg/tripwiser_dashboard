@@ -103,21 +103,18 @@ export interface ApiResponse<T> {
 
 // Affiliate System Types
 export interface AffiliateLink {
-  id: string;
+  _id: string;
   type: 'elite_gift' | 'influencer';
-  deepLink: string;
+  influencerId?: string; // For influencer links
+  createdBy: string;
+  isActive: boolean;
+  expiresAt?: string;
   maxUses?: number;
   usedCount: number;
-  expiresAt?: Date;
-  isActive: boolean;
-  description?: string;
-  influencerId?: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  createdAt: Date;
-  updatedAt: Date;
+  deepLink: string; // The actual generated deep link URL
+  metadata: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AffiliateStats {

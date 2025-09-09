@@ -239,8 +239,8 @@ class ApiService {
     return response.data.data;
   }
 
-  async getInfluencers(): Promise<User[]> {
-    const response = await this.api.get<ApiResponse<{ users: User[] }>>('/users?role=influencer');
+  async searchUsers(query: string): Promise<User[]> {
+    const response = await this.api.get<ApiResponse<{ users: User[] }>>(`/users/search?q=${encodeURIComponent(query)}`);
     return response.data.data.users;
   }
 }
