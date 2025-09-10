@@ -58,6 +58,20 @@ function App() {
 
   const handleLogin = async () => {
     setAuthError('');
+    // Check if tokens exist after successful login
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      setIsAuthenticated(true);
+      setIsAuthorized(true);
+      // Optionally fetch current user data
+      try {
+        const user = await apiService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+        // Still allow login even if user fetch fails
+      }
+    }
   };
 
   const handleLogout = () => {
