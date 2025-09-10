@@ -6,6 +6,7 @@ import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { apiService } from '../services/api';
 import { AffiliateDashboard } from './AffiliateDashboard';
+import { User } from '../types';
 import { 
   Users, 
   MapPin, 
@@ -20,7 +21,12 @@ import {
   Link as LinkIcon
 } from 'lucide-react';
 
-export function Dashboard() {
+interface DashboardProps {
+  currentUser?: User | null;
+  onLogout?: () => void;
+}
+
+export function Dashboard({ currentUser, onLogout }: DashboardProps) {
   const [showAffiliateDashboard, setShowAffiliateDashboard] = useState(false);
 
   const { data: platformStats, isLoading, error } = useQuery(
@@ -152,6 +158,29 @@ export function Dashboard() {
                   {systemHealth?.status || 'Unknown'}
                 </span>
               </Badge>
+              
+              {currentUser && (
+                <div className="flex items-center gap-sm">
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-foreground">
+                      {currentUser.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {currentUser.email}
+                    </div>
+                  </div>
+                  {onLogout && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={onLogout}
+                      className="text-xs"
+                    >
+                      Logout
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

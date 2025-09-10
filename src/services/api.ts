@@ -71,6 +71,11 @@ class ApiService {
     return response.data;
   }
 
+  async getCurrentUser(): Promise<User> {
+    const response = await this.api.get<ApiResponse<User>>('/auth/me');
+    return response.data.data;
+  }
+
   async logout() {
     await this.api.post('/auth/logout');
     localStorage.removeItem('accessToken');

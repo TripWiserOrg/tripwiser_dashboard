@@ -4,6 +4,7 @@ export interface User {
   email: string;
   auth_provider: 'local' | 'google' | 'apple';
   plan: 'free' | 'pro' | 'elite';
+  role?: 'user' | 'admin' | 'super_admin';
   avatar?: string;
   bio?: string;
   preferences?: string;

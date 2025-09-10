@@ -1,29 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { Login } from './components/Login';
+import { apiService } from './services/api';
+import { User } from './types';
 import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
-    // Check if user is already authenticated
+    // Check if user is already authenticated and authorized
     const token = localStorage.getItem('accessToken');
     if (token) {
-      setIsAuthenticated(true);
+      checkAdminAuthorization();
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
+  const checkAdminAuthorization = async () => {
+    try {
+      const user = await apiService.getCurrentUser();
+      setCurrentUser(user);
+      
+      // Check if user email is in AUTHORIZED_ADMINS
+      const authorizedAdmins = process.env.REACT_APP_AUTHORIZED_ADMINS?.split(',') || [];
+      const isAdmin = authorizedAdmins.includes(user.email);
+      
+      if (isAdmin) {
+        setIsAuthenticated(true);
+        setIsAuthorized(true);
+      } else {
+        setAuthError('Access denied. You are not authorized to access the admin dashboard.');
+        // Clear tokens for unauthorized users
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
+    } catch (error) {
+      console.error('Authorization check failed:', error);
+      setAuthError('Failed to verify admin access. Please try logging in again.');
+      // Clear tokens on error
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    setAuthError('');
+    await checkAdminAuthorization();
   };
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setIsAuthenticated(false);
+    setIsAuthorized(false);
+    setCurrentUser(null);
+    setAuthError('');
   };
 
   if (isLoading) {
@@ -44,13 +83,13 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
+  if (!isAuthenticated || !isAuthorized) {
+    return <Login onLogin={handleLogin} error={authError} />;
   }
 
   return (
     <div className="App">
-      <Dashboard />
+      <Dashboard currentUser={currentUser} onLogout={handleLogout} />
     </div>
   );
 }
