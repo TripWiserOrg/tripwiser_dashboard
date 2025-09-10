@@ -18,44 +18,43 @@ function App() {
     if (token) {
       setIsAuthenticated(true);
       setIsAuthorized(true);
-      setIsLoading(false);
-    } else {
+   } else {
       setAuthError('Access denied. You are not authorized to access the admin dashboard.');
       // Clear tokens for unauthorized users
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
     }
-
+    setIsLoading(false);
   }, []);
 
-  const checkAdminAuthorization = async () => {
-    try {
-      const user = await apiService.getCurrentUser();
-      setCurrentUser(user);
+  // const checkAdminAuthorization = async () => {
+  //   try {
+  //     const user = await apiService.getCurrentUser();
+  //     setCurrentUser(user);
       
-      // Check if user email is in AUTHORIZED_ADMINS
-      const authorizedAdmins = process.env.REACT_APP_AUTHORIZED_ADMINS?.split(',') || ["sachamarciano9@gmail.com","ron12390@gmail.com"];
-      const isAdmin = authorizedAdmins.includes(user.email);
+  //     // Check if user email is in AUTHORIZED_ADMINS
+  //     const authorizedAdmins = process.env.REACT_APP_AUTHORIZED_ADMINS?.split(',') || ["sachamarciano9@gmail.com","ron12390@gmail.com"];
+  //     const isAdmin = authorizedAdmins.includes(user.email);
       
-      if (isAdmin) {
-        setIsAuthenticated(true);
-        setIsAuthorized(true);
-      } else {
-        setAuthError('Access denied. You are not authorized to access the admin dashboard.');
-        // Clear tokens for unauthorized users
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-      }
-    } catch (error) {
-      console.error('Authorization check failed:', error);
-      setAuthError('Failed to verify admin access. Please try logging in again.');
-      // Clear tokens on error
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     if (isAdmin) {
+  //       setIsAuthenticated(true);
+  //       setIsAuthorized(true);
+  //     } else {
+  //       setAuthError('Access denied. You are not authorized to access the admin dashboard.');
+  //       // Clear tokens for unauthorized users
+  //       localStorage.removeItem('accessToken');
+  //       localStorage.removeItem('refreshToken');
+  //     }
+  //   } catch (error) {
+  //     console.error('Authorization check failed:', error);
+  //     setAuthError('Failed to verify admin access. Please try logging in again.');
+  //     // Clear tokens on error
+  //     localStorage.removeItem('accessToken');
+  //     localStorage.removeItem('refreshToken');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handleLogin = async () => {
     setAuthError('');
