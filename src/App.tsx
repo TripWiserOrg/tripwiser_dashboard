@@ -16,10 +16,16 @@ function App() {
     // Check if user is already authenticated and authorized
     const token = localStorage.getItem('accessToken');
     if (token) {
-      checkAdminAuthorization();
-    } else {
+      setIsAuthenticated(true);
+      setIsAuthorized(true);
       setIsLoading(false);
+    } else {
+      setAuthError('Access denied. You are not authorized to access the admin dashboard.');
+      // Clear tokens for unauthorized users
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
     }
+
   }, []);
 
   const checkAdminAuthorization = async () => {
@@ -28,7 +34,7 @@ function App() {
       setCurrentUser(user);
       
       // Check if user email is in AUTHORIZED_ADMINS
-      const authorizedAdmins = process.env.REACT_APP_AUTHORIZED_ADMINS?.split(',') || [];
+      const authorizedAdmins = process.env.REACT_APP_AUTHORIZED_ADMINS?.split(',') || ["sachamarciano9@gmail.com","ron12390@gmail.com"];
       const isAdmin = authorizedAdmins.includes(user.email);
       
       if (isAdmin) {
@@ -53,7 +59,6 @@ function App() {
 
   const handleLogin = async () => {
     setAuthError('');
-    await checkAdminAuthorization();
   };
 
   const handleLogout = () => {
