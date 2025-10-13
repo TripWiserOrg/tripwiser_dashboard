@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { firebaseAuthService } from '../services/firebaseAuth';
-import { Chrome, Apple } from 'lucide-react';
+import { Chrome, Apple, LogOut } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
@@ -130,11 +130,28 @@ export function Login({ onLogin, error: propError }: LoginProps) {
               className="h-14 text-base"
             />
             {(error || propError) && (
-              <div className="text-sm text-destructive bg-destructive/10 p-md rounded-lg border border-destructive/20 flex items-center gap-sm">
-                <svg className="h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {error || propError}
+              <div className="space-y-sm">
+                <div className="text-sm text-destructive bg-destructive/10 p-md rounded-lg border border-destructive/20 flex items-center gap-sm">
+                  <svg className="h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {error || propError}
+                </div>
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="sm"
+                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={async () => {
+                    await firebaseAuthService.signOut();
+                    setError('');
+                    setCredentials({ email: '', password: '' });
+                    window.location.reload();
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Clear Session & Retry
+                </Button>
               </div>
             )}
             <Button 

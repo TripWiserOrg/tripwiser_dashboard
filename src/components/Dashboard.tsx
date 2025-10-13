@@ -120,9 +120,16 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
           <p className="text-muted-foreground mb-4">
             Unable to load platform statistics. Please try again.
           </p>
-          <Button onClick={() => window.location.reload()}>
-            Retry
-          </Button>
+          <div className="flex gap-md justify-center">
+            <Button onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+            {onLogout && (
+              <Button variant="outline" onClick={onLogout}>
+                Logout
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
