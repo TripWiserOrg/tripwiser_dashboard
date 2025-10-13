@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { apiService } from '../services/api';
+import { firebaseAuthService } from '../services/firebaseAuth';
+import { Chrome, Apple } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
@@ -17,18 +18,60 @@ export function Login({ onLogin, error: propError }: LoginProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await apiService.login(credentials);
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      await firebaseAuthService.signInWithEmail(credentials.email, credentials.password);
       onLogin();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      if (err.message?.includes('Admin privileges required') || err.message?.includes('not authorized')) {
+        setError('Access denied. Admin privileges required.');
+      } else {
+        setError(err.message || 'Login failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await firebaseAuthService.signInWithGoogle();
+      onLogin();
+    } catch (err: any) {
+      if (err.message === 'Sign-in cancelled') {
+        setError('');
+      } else if (err.message?.includes('Admin privileges required') || err.message?.includes('not authorized')) {
+        setError('Access denied. Admin privileges required.');
+      } else {
+        setError(err.message || 'Google login failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await firebaseAuthService.signInWithApple();
+      onLogin();
+    } catch (err: any) {
+      if (err.message === 'Sign-in cancelled') {
+        setError('');
+      } else if (err.message?.includes('Admin privileges required') || err.message?.includes('not authorized')) {
+        setError('Access denied. Admin privileges required.');
+      } else {
+        setError(err.message || 'Apple login failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +110,7 @@ export function Login({ onLogin, error: propError }: LoginProps) {
           <p className="text-muted-foreground mt-sm">Sign in to your admin dashboard</p>
         </CardHeader>
         <CardContent className="bg-white">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleEmailLogin} className="space-y-6">
             <Input
               label="Email"
               type="email"
@@ -105,10 +148,45 @@ export function Login({ onLogin, error: propError }: LoginProps) {
                   Signing in...
                 </div>
               ) : (
-                'Sign In'
+                'Sign In with Email'
               )}
             </Button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-muted-foreground">OR</span>
+            </div>
+          </div>
+
+          {/* Social Login Buttons */}
+          <div className="space-y-3">
+            <Button 
+              type="button"
+              variant="outline"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full h-14 text-base font-semibold"
+            >
+              <Chrome className="h-5 w-5 mr-2" />
+              Sign In with Google
+            </Button>
+
+            <Button 
+              type="button"
+              variant="outline"
+              onClick={handleAppleLogin}
+              disabled={isLoading}
+              className="w-full h-14 text-base font-semibold"
+            >
+              <Apple className="h-5 w-5 mr-2" />
+              Sign In with Apple
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

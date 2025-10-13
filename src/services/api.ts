@@ -1,12 +1,13 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { ApiResponse, PlatformStats, User, Trip, Notification, AffiliateLink, AffiliateAnalytics, LinkGenerationData } from '../types';
+import { firebaseAuthService } from './firebaseAuth';
 
 class ApiService {
   private api: AxiosInstance;
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    this.baseURL = process.env.REACT_APP_API_URL || 'https://tripwiser-backend.onrender.com/api';
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 10000,
@@ -16,10 +17,11 @@ class ApiService {
   }
 
   private setupInterceptors() {
-    // Request interceptor to add auth token
+    // Request interceptor to add Firebase auth token
     this.api.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('accessToken');
+      async (config) => {
+        // Get Firebase token (automatically refreshes if needed)
+        const token = await firebaseAuthService.getToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -30,20 +32,27 @@ class ApiService {
       }
     );
 
-    // Response interceptor for error handling and token refresh
+    // Response interceptor for error handling
     this.api.interceptors.response.use(
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
           try {
-            await this.refreshToken();
-            // Retry the original request
-            return this.api.request(error.config);
+            // Try to get a fresh token
+            const token = await firebaseAuthService.getToken();
+            if (token) {
+              // Retry the original request with new token
+              error.config.headers.Authorization = `Bearer ${token}`;
+              return this.api.request(error.config);
+            } else {
+              // No token available, redirect to login
+              await firebaseAuthService.signOut();
+              window.location.href = '/';
+            }
           } catch (refreshError) {
-            // Redirect to login
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            window.location.href = '/login';
+            // Token refresh failed, redirect to login
+            await firebaseAuthService.signOut();
+            window.location.href = '/';
           }
         }
         return Promise.reject(error);
@@ -51,35 +60,10 @@ class ApiService {
     );
   }
 
-  private async refreshToken() {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await axios.post(`${this.baseURL}/auth/refresh`, {
-      refreshToken,
-    });
-
-    localStorage.setItem('accessToken', response.data.accessToken);
-    localStorage.setItem('refreshToken', response.data.refreshToken);
-  }
-
-  // Authentication
-  async login(credentials: { email: string; password: string }) {
-    const response = await this.api.post<ApiResponse<{ accessToken: string; refreshToken: string }>>('/auth/login', credentials);
-    return response.data;
-  }
-
+  // Authentication - Now handled by firebaseAuthService
   async getCurrentUser(): Promise<User> {
     const response = await this.api.get<ApiResponse<User>>('/auth/me');
     return response.data.data;
-  }
-
-  async logout() {
-    await this.api.post('/auth/logout');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
   }
 
   // Admin endpoints
