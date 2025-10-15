@@ -21,7 +21,8 @@ import {
   Filter,
   Search,
   Calendar,
-  BarChart3
+  BarChart3,
+  Trash2
 } from 'lucide-react';
 
 interface AffiliateDashboardProps {
@@ -39,9 +40,17 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
   });
 
   // Fetch affiliate analytics
-  const { data: analytics, isLoading: analyticsLoading } = useQuery(
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery(
     'affiliateAnalytics',
-    () => apiService.getAffiliateAnalytics('30d')
+    () => apiService.getAffiliateAnalytics('30d'),
+    {
+      onSuccess: (data) => {
+        console.log('Analytics loaded successfully:', data);
+      },
+      onError: (error) => {
+        console.error('Failed to load analytics:', error);
+      }
+    }
   );
 
   // Fetch affiliate links
@@ -115,10 +124,30 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
 
   const handleToggleLinkStatus = async (linkId: string) => {
     try {
-      await apiService.toggleLinkStatus(linkId);
+      const result = await apiService.toggleLinkStatus(linkId);
+      console.log('Toggle result:', result);
+      alert(result.message || 'Link status toggled successfully');
       refetchLinks();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to toggle link status:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to toggle link status';
+      alert(`Error: ${errorMessage}`);
+    }
+  };
+
+  const handleDeleteLink = async (linkId: string, linkName: string) => {
+    if (!window.confirm(`Are you sure you want to delete this link: ${linkName}?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await apiService.deleteAffiliateLink(linkId);
+      alert('Link deleted successfully');
+      refetchLinks();
+    } catch (error: any) {
+      console.error('Failed to delete link:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete link';
+      alert(`Error: ${errorMessage}`);
     }
   };
 
@@ -219,6 +248,15 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <div className="space-y-lg">
+            {/* Analytics Error Display */}
+            {analyticsError ? (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <p className="text-destructive text-sm">
+                  ⚠️ Failed to load analytics data. Using default values.
+                </p>
+              </div>
+            ) : null}
+            
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
               <StatCard
@@ -270,8 +308,8 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                   <div className="space-y-md">
                     {linksData?.links?.slice(0, 5).map((link) => (
                       <div key={link._id || link.id} className="flex items-center justify-between p-md bg-muted/30 rounded-lg">
-                        <div className="flex items-center gap-md">
-                          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                        <div className="flex items-center gap-md flex-1">
+                          <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                             link.type === 'elite_gift' ? 'bg-blue-100' : 'bg-green-100'
                           }`}>
                             {link.type === 'elite_gift' ? (
@@ -280,16 +318,21 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                               <Users className="h-4 w-4 text-green-600" />
                             )}
                           </div>
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-foreground">
                               {link.type === 'elite_gift' ? 'Elite Gift Link' : link.influencerName ? link.influencerName : 'User Link'}
                             </p>
+                            {link.metadata?.description && (
+                              <p className="text-xs text-muted-foreground italic truncate">
+                                📝 {link.metadata.description}
+                              </p>
+                            )}
                             <p className="text-xs text-muted-foreground">
                               {link.usedCount} uses
                             </p>
                           </div>
                         </div>
-                        <Badge variant={link.isActive ? 'success' : 'secondary'}>
+                        <Badge variant={link.isActive ? 'success' : 'secondary'} className="flex-shrink-0">
                           {link.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
@@ -348,6 +391,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
             filters={filters}
             onFiltersChange={setFilters}
             onToggleStatus={handleToggleLinkStatus}
+            onDeleteLink={handleDeleteLink}
             onCopyLink={copyToClipboard}
           />
         )}
@@ -631,7 +675,8 @@ function AffiliateLinksTable({
   loading, 
   filters, 
   onFiltersChange, 
-  onToggleStatus, 
+  onToggleStatus,
+  onDeleteLink, 
   onCopyLink 
 }: {
   links: AffiliateLink[];
@@ -639,6 +684,7 @@ function AffiliateLinksTable({
   filters: { type: string; status: string; search: string };
   onFiltersChange: (filters: { type: string; status: string; search: string }) => void;
   onToggleStatus: (linkId: string) => void;
+  onDeleteLink: (linkId: string, linkName: string) => void;
   onCopyLink: (text: string) => void;
 }) {
   return (
@@ -739,11 +785,23 @@ function AffiliateLinksTable({
                               }
                             </div>
                             {typeof link.influencerId === 'object' && (link.influencerId as any)?.email && (
-                              <div className="text-muted-foreground">{(link.influencerId as any).email}</div>
+                              <div className="text-xs text-muted-foreground">{(link.influencerId as any).email}</div>
+                            )}
+                            {link.metadata?.description && (
+                              <div className="text-xs text-muted-foreground mt-1 italic">
+                                📝 {link.metadata.description}
+                              </div>
                             )}
                           </div>
                         ) : (
-                          <div className="text-muted-foreground">Elite Gift Link</div>
+                          <div>
+                            <div className="text-muted-foreground">Elite Gift Link</div>
+                            {link.metadata?.description && (
+                              <div className="text-xs text-muted-foreground mt-1 italic">
+                                📝 {link.metadata.description}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>
@@ -775,6 +833,7 @@ function AffiliateLinksTable({
                           size="sm"
                           onClick={() => onCopyLink(link.deepLink)}
                           className="text-primary hover:text-primary/80"
+                          title="Copy link"
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
@@ -782,9 +841,24 @@ function AffiliateLinksTable({
                           variant="ghost"
                           size="sm"
                           onClick={() => onToggleStatus(link._id || link.id || '')}
-                          className={link.isActive ? 'text-destructive hover:text-destructive/80' : 'text-success hover:text-success/80'}
+                          className={link.isActive ? 'text-warning hover:text-warning/80' : 'text-success hover:text-success/80'}
+                          title={link.isActive ? 'Deactivate link' : 'Activate link'}
                         >
                           {link.isActive ? <ToggleLeft className="h-4 w-4" /> : <ToggleRight className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const linkName = link.type === 'elite_gift' 
+                              ? 'Elite Gift Link' 
+                              : link.influencerName || 'Influencer Link';
+                            onDeleteLink(link._id || link.id || '', linkName);
+                          }}
+                          className="text-destructive hover:text-destructive/80"
+                          title="Delete link"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </td>
@@ -961,6 +1035,11 @@ function LinkGeneratedModal({
             {link.influencerName && (
               <p className="text-sm text-muted-foreground mt-1">
                 For: {link.influencerName}
+              </p>
+            )}
+            {link.metadata?.description && (
+              <p className="text-sm text-muted-foreground mt-1 italic">
+                📝 {link.metadata.description}
               </p>
             )}
           </div>

@@ -49,12 +49,13 @@ PUT  /admin/content/:id/moderate    - Moderate content (approve/reject/delete)
 
 AFFILIATE SYSTEM ENDPOINTS
 ==========================
-POST /affiliate/generate-elite-link      - Generate elite gift link (admin)
-POST /affiliate/generate-influencer-link - Generate influencer affiliate link (admin)
-GET  /admin/affiliate/links              - Get all affiliate links (admin)
-PUT  /admin/affiliate/links/:id/toggle   - Toggle link active status (admin)
-GET  /admin/affiliate/overview           - Get affiliate analytics (admin)
-GET  /users/search                       - Search users by name or email
+POST   /affiliate/generate-elite-link      - Generate elite gift link (admin)
+POST   /affiliate/generate-influencer-link - Generate influencer affiliate link (admin)
+GET    /admin/affiliate/links              - Get all affiliate links (admin)
+PUT    /admin/affiliate/links/:id/toggle   - Toggle link active status (admin)
+DELETE /admin/affiliate/links/:id          - Delete affiliate link (admin)
+GET    /admin/affiliate/overview           - Get affiliate analytics (admin)
+GET    /users/search                       - Search users by name or email
 
 ADDITIONAL ENDPOINTS (Available but not currently used in dashboard)
 ===================================================================
@@ -186,7 +187,7 @@ PUT    /reports/:id                 - Update report status
 
 ENDPOINT USAGE IN DASHBOARD
 ==========================
-Currently Used (25 endpoints):
+Currently Used (26 endpoints):
 - POST /auth/login
 - POST /auth/logout  
 - POST /auth/refresh
@@ -206,12 +207,13 @@ Currently Used (25 endpoints):
 - GET  /admin/payments/overview
 - GET  /admin/content/moderate
 - PUT  /admin/content/:id/moderate
-- POST /affiliate/generate-elite-link
-- POST /affiliate/generate-influencer-link
-- GET  /admin/affiliate/links
-- PUT  /admin/affiliate/links/:id/toggle
-- GET  /admin/affiliate/overview
-- GET  /users/search
+- POST   /affiliate/generate-elite-link
+- POST   /affiliate/generate-influencer-link
+- GET    /admin/affiliate/links
+- PUT    /admin/affiliate/links/:id/toggle
+- DELETE /admin/affiliate/links/:id
+- GET    /admin/affiliate/overview
+- GET    /users/search
 
 Available but not used (80+ endpoints):
 - All user-facing endpoints for trips, packing lists, itineraries, journals

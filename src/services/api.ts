@@ -213,6 +213,13 @@ class ApiService {
       requestBody.expiresAt = date.toISOString();
     }
     
+    // Add description to metadata if provided
+    if (data.description) {
+      requestBody.metadata = {
+        description: data.description
+      };
+    }
+    
     console.log('Generating Elite Gift Link with request:', requestBody);
     const response = await this.api.post<ApiResponse<{ affiliateLink: AffiliateLink }>>('/affiliate/generate-elite-link', requestBody);
     console.log('Elite Gift Link API Response:', response.data);
@@ -243,6 +250,13 @@ class ApiService {
       requestBody.expiresAt = date.toISOString();
     }
     
+    // Add description to metadata if provided
+    if (data.description) {
+      requestBody.metadata = {
+        description: data.description
+      };
+    }
+    
     console.log('Generating Influencer Link with request:', requestBody);
     const response = await this.api.post<ApiResponse<{ affiliateLink: AffiliateLink }>>('/affiliate/generate-influencer-link', requestBody);
     console.log('Influencer Link API Response:', response.data);
@@ -267,12 +281,22 @@ class ApiService {
   }
 
   async toggleLinkStatus(linkId: string): Promise<{ success: boolean; message: string }> {
+    console.log('Toggling link status for:', linkId);
     const response = await this.api.put<ApiResponse<{ success: boolean; message: string }>>(`/admin/affiliate/links/${linkId}/toggle`);
+    console.log('Toggle response:', response.data);
     return response.data.data;
   }
 
+  async deleteAffiliateLink(linkId: string): Promise<void> {
+    console.log('Deleting link:', linkId);
+    await this.api.delete(`/admin/affiliate/links/${linkId}`);
+    console.log('Link deleted successfully');
+  }
+
   async getAffiliateAnalytics(period: string = '30d'): Promise<AffiliateAnalytics> {
+    console.log('Fetching affiliate analytics for period:', period);
     const response = await this.api.get<ApiResponse<AffiliateAnalytics>>(`/admin/affiliate/overview?period=${period}`);
+    console.log('Affiliate Analytics Response:', response.data);
     return response.data.data;
   }
 
