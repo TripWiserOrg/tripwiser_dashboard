@@ -104,18 +104,20 @@ export interface ApiResponse<T> {
 
 // Affiliate System Types
 export interface AffiliateLink {
-  _id: string;
+  _id?: string; // MongoDB ID (from list endpoints)
+  id?: string; // Backend returns 'id' for newly generated links
   type: 'elite_gift' | 'influencer';
-  influencerId?: string; // For influencer links
-  createdBy: string;
+  influencerId?: string | User; // For influencer links, can be populated
+  influencerName?: string; // For influencer links
+  createdBy?: string;
   isActive: boolean;
   expiresAt?: string;
   maxUses?: number;
   usedCount: number;
-  deepLink: string; // The actual generated deep link URL
-  metadata: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
+  deepLink: string; // The actual generated deep link URL - THIS IS THE LINK TO COPY
+  metadata?: Record<string, any>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AffiliateStats {

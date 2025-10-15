@@ -21,8 +21,7 @@ import {
   Filter,
   Search,
   Calendar,
-  BarChart3,
-  Eye
+  BarChart3
 } from 'lucide-react';
 
 interface AffiliateDashboardProps {
@@ -96,11 +95,21 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
         link = await apiService.generateInfluencerLink(data);
       }
       
+      // Validate the link has a deepLink
+      if (!link.deepLink) {
+        console.error('Generated link is missing deepLink field:', link);
+        alert('Error: Generated link is missing the URL. Please try again or contact support.');
+        return;
+      }
+      
+      console.log('Link generated successfully with deepLink:', link.deepLink);
       setGeneratedLink(link);
       setShowLinkModal(true);
       refetchLinks();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate link:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to generate link';
+      alert(`Error generating link: ${errorMessage}`);
     }
   };
 
@@ -260,7 +269,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                 <CardContent>
                   <div className="space-y-md">
                     {linksData?.links?.slice(0, 5).map((link) => (
-                      <div key={link._id} className="flex items-center justify-between p-md bg-muted/30 rounded-lg">
+                      <div key={link._id || link.id} className="flex items-center justify-between p-md bg-muted/30 rounded-lg">
                         <div className="flex items-center gap-md">
                           <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
                             link.type === 'elite_gift' ? 'bg-blue-100' : 'bg-green-100'
@@ -273,7 +282,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-foreground">
-                              {link.type === 'elite_gift' ? 'Elite Gift Link' : 'User Link'}
+                              {link.type === 'elite_gift' ? 'Elite Gift Link' : link.influencerName ? link.influencerName : 'User Link'}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {link.usedCount} uses
@@ -711,7 +720,7 @@ function AffiliateLinksTable({
                 </tr>
               ) : (
                 links.map((link) => (
-                  <tr key={link._id} className="hover:bg-muted/30">
+                  <tr key={link._id || link.id} className="hover:bg-muted/30">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge variant={link.type === 'elite_gift' ? 'default' : 'success'}>
                         {link.type === 'elite_gift' ? '🎁 Elite Gift' : '👥 User'}
@@ -719,15 +728,17 @@ function AffiliateLinksTable({
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-foreground">
-                        {link.type === 'influencer' && link.influencerId ? (
+                        {link.type === 'influencer' && (link.influencerId || link.influencerName) ? (
                           <div>
                             <div className="font-medium">
-                              {typeof link.influencerId === 'string' 
-                                ? `User ID: ${link.influencerId}` 
-                                : `User: ${(link.influencerId as any).name || 'Unknown'}`
+                              {link.influencerName 
+                                ? `User: ${link.influencerName}`
+                                : typeof link.influencerId === 'string' 
+                                  ? `User ID: ${link.influencerId}` 
+                                  : `User: ${(link.influencerId as any)?.name || 'Unknown'}`
                               }
                             </div>
-                            {typeof link.influencerId === 'object' && (link.influencerId as any).email && (
+                            {typeof link.influencerId === 'object' && (link.influencerId as any)?.email && (
                               <div className="text-muted-foreground">{(link.influencerId as any).email}</div>
                             )}
                           </div>
@@ -755,7 +766,7 @@ function AffiliateLinksTable({
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                      {new Date(link.createdAt).toLocaleDateString()}
+                      {link.createdAt ? new Date(link.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
@@ -770,7 +781,7 @@ function AffiliateLinksTable({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onToggleStatus(link._id)}
+                          onClick={() => onToggleStatus(link._id || link.id || '')}
                           className={link.isActive ? 'text-destructive hover:text-destructive/80' : 'text-success hover:text-success/80'}
                         >
                           {link.isActive ? <ToggleLeft className="h-4 w-4" /> : <ToggleRight className="h-4 w-4" />}
@@ -932,39 +943,82 @@ function LinkGeneratedModal({
   onClose: () => void;
   onCopy: (text: string) => void;
 }) {
+  // Log the link to console for debugging
+  console.log('Generated Link Object:', link);
+  console.log('Deep Link to Copy:', link.deepLink);
+
   return (
-    <div className="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-background">
+    <div className="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50" onClick={onClose}>
+      <div className="relative top-20 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-background" onClick={(e) => e.stopPropagation()}>
         <div className="mt-3">
           <div className="flex items-center justify-center w-12 h-12 mx-auto bg-success/10 rounded-full">
             <CheckCircle className="h-6 w-6 text-success" />
           </div>
-          <div className="mt-2 text-center">
-            <h3 className="text-lg font-medium text-foreground">
-              Link Generated Successfully!
+          <div className="mt-4 text-center">
+            <h3 className="text-xl font-bold text-foreground">
+              {link.type === 'elite_gift' ? '🎁 Elite Gift Link' : '👥 Influencer Link'} Generated Successfully!
             </h3>
-            <div className="mt-4">
-              <div className="bg-muted p-3 rounded-md">
-                <p className="text-sm text-muted-foreground break-all">
-                  {link.deepLink}
-                </p>
-              </div>
-              <div className="mt-4 flex space-x-3">
-                <Button
-                  onClick={() => onCopy(link.deepLink)}
-                  className="flex-1"
-                >
-                  Copy Link
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  className="flex-1"
-                >
-                  Close
-                </Button>
+            {link.influencerName && (
+              <p className="text-sm text-muted-foreground mt-1">
+                For: {link.influencerName}
+              </p>
+            )}
+          </div>
+
+          {/* Link Details */}
+          <div className="mt-6 space-y-3">
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
+                    Affiliate Link (Copy This)
+                  </label>
+                  <p className="text-sm text-foreground break-all font-mono bg-background p-3 rounded border border-border">
+                    {link.deepLink}
+                  </p>
+                </div>
               </div>
             </div>
+
+            {/* Link Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-muted/30 p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Status</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {link.isActive ? '✓ Active' : '✗ Inactive'}
+                </p>
+              </div>
+              <div className="bg-muted/30 p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Max Uses</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {link.maxUses || '∞ Unlimited'}
+                </p>
+              </div>
+              <div className="bg-muted/30 p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Expires</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {link.expiresAt ? new Date(link.expiresAt).toLocaleDateString() : 'Never'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-6 flex gap-3">
+            <Button
+              onClick={() => onCopy(link.deepLink)}
+              className="flex-1 flex items-center justify-center gap-2"
+            >
+              <Copy className="h-4 w-4" />
+              Copy Link
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+            >
+              Close
+            </Button>
           </div>
         </div>
       </div>

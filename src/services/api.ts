@@ -1,5 +1,5 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ApiResponse, PlatformStats, User, Trip, Notification, AffiliateLink, AffiliateAnalytics, LinkGenerationData } from '../types';
+import axios, { AxiosInstance } from 'axios';
+import { ApiResponse, PlatformStats, User, Trip, AffiliateLink, AffiliateAnalytics, LinkGenerationData } from '../types';
 import { firebaseAuthService } from './firebaseAuth';
 
 class ApiService {
@@ -200,13 +200,61 @@ class ApiService {
 
   // Affiliate System endpoints
   async generateEliteGiftLink(data: LinkGenerationData): Promise<AffiliateLink> {
-    const response = await this.api.post<ApiResponse<{ affiliateLink: AffiliateLink }>>('/affiliate/generate-elite-link', data);
-    return response.data.data.affiliateLink;
+    // Format request body to match backend expectations
+    const requestBody: any = {};
+    
+    if (data.maxUses) {
+      requestBody.maxUses = data.maxUses;
+    }
+    
+    if (data.expiresAt) {
+      // Convert datetime-local format to ISO 8601 format
+      const date = new Date(data.expiresAt);
+      requestBody.expiresAt = date.toISOString();
+    }
+    
+    console.log('Generating Elite Gift Link with request:', requestBody);
+    const response = await this.api.post<ApiResponse<{ affiliateLink: AffiliateLink }>>('/affiliate/generate-elite-link', requestBody);
+    console.log('Elite Gift Link API Response:', response.data);
+    
+    const link = response.data.data.affiliateLink;
+    if (!link.deepLink) {
+      console.error('WARNING: No deepLink in response!', link);
+      throw new Error('Generated link is missing deepLink field');
+    }
+    
+    console.log('Elite Gift DeepLink:', link.deepLink);
+    return link;
   }
 
   async generateInfluencerLink(data: LinkGenerationData): Promise<AffiliateLink> {
-    const response = await this.api.post<ApiResponse<{ affiliateLink: AffiliateLink }>>('/affiliate/generate-influencer-link', data);
-    return response.data.data.affiliateLink;
+    // Format request body to match backend expectations
+    const requestBody: any = {
+      influencerId: data.influencerId
+    };
+    
+    if (data.maxUses) {
+      requestBody.maxUses = data.maxUses;
+    }
+    
+    if (data.expiresAt) {
+      // Convert datetime-local format to ISO 8601 format
+      const date = new Date(data.expiresAt);
+      requestBody.expiresAt = date.toISOString();
+    }
+    
+    console.log('Generating Influencer Link with request:', requestBody);
+    const response = await this.api.post<ApiResponse<{ affiliateLink: AffiliateLink }>>('/affiliate/generate-influencer-link', requestBody);
+    console.log('Influencer Link API Response:', response.data);
+    
+    const link = response.data.data.affiliateLink;
+    if (!link.deepLink) {
+      console.error('WARNING: No deepLink in response!', link);
+      throw new Error('Generated link is missing deepLink field');
+    }
+    
+    console.log('Influencer DeepLink:', link.deepLink);
+    return link;
   }
 
   async getAffiliateLinks(filters: { type?: string; status?: string } = {}): Promise<{ links: AffiliateLink[]; pagination: any }> {
