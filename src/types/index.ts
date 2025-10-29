@@ -104,11 +104,9 @@ export interface ApiResponse<T> {
 
 // Affiliate System Types
 export interface AffiliateLink {
-  _id?: string; // MongoDB ID (from list endpoints)
-  id?: string; // Backend returns 'id' for newly generated links
-  type: 'elite_gift' | 'influencer';
-  influencerId?: string | User; // For influencer links, can be populated
-  influencerName?: string; // For influencer links
+  _id: string; // MongoDB ID - backend always returns _id
+  type: 'elite_gift' | 'influencer_referral';
+  influencerId?: User; // For influencer links, backend returns populated user object
   createdBy?: string;
   isActive: boolean;
   expiresAt?: string;
@@ -148,4 +146,48 @@ export interface LinkGenerationData {
   expiresAt?: string;
   description?: string;
   influencerId?: string;
+}
+
+// Detailed Affiliate Analytics Types
+export interface ConversionUser {
+  _id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  signupPlan: 'free' | 'pro' | 'elite';
+  currentPlan: 'free' | 'pro' | 'elite';
+  signupDate: string;
+}
+
+export interface DetailedAffiliateStats {
+  totalConversions: number;
+  uniqueUsers: number;
+  planBreakdown: {
+    free: number;
+    pro: number;
+    elite: number;
+  };
+  conversionRate: number;
+}
+
+export interface DetailedAffiliateData {
+  influencer: User;
+  affiliateLink: AffiliateLink;
+  conversions: ConversionUser[];
+  stats: DetailedAffiliateStats;
+}
+
+export interface DetailedAffiliateResponse {
+  affiliates: DetailedAffiliateData[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  summary: {
+    totalConversions: number;
+    totalInfluencers: number;
+    totalUniqueUsers: number;
+  };
 }

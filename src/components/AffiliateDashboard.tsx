@@ -6,12 +6,12 @@ import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { apiService } from '../services/api';
-import { AffiliateLink, AffiliateAnalytics, LinkGenerationData, User } from '../types';
-import { 
+import { AffiliateLink, AffiliateAnalytics, LinkGenerationData, User, DetailedAffiliateResponse } from '../types';
+import {
   ArrowLeft,
-  Gift, 
-  Users, 
-  Link as LinkIcon, 
+  Gift,
+  Users,
+  Link as LinkIcon,
   CheckCircle,
   TrendingUp,
   Copy,
@@ -22,7 +22,10 @@ import {
   Search,
   Calendar,
   BarChart3,
-  Trash2
+  Trash2,
+  List,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface AffiliateDashboardProps {
@@ -30,14 +33,39 @@ interface AffiliateDashboardProps {
 }
 
 export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'generate' | 'links' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'generate' | 'links' | 'detailed' | 'analytics'>('overview');
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<AffiliateLink | null>(null);
   const [filters, setFilters] = useState({
     type: 'all',
-    status: 'all',
     search: ''
   });
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+
+  // Detailed view filters
+  const [detailedFilters, setDetailedFilters] = useState({
+    period: 'all',
+    sortBy: 'conversions' as 'conversions' | 'uniqueUsers' | 'conversionRate' | 'usageCount' | 'name',
+    sortOrder: 'desc' as 'asc' | 'desc',
+    page: 1,
+    limit: 20
+  });
+
+  // Fetch detailed affiliate data
+  const { data: detailedData, isLoading: detailedLoading, refetch: refetchDetailed } = useQuery(
+    ['detailedAffiliateData', detailedFilters],
+    () => apiService.getDetailedAffiliateData({
+      period: detailedFilters.period !== 'all' ? detailedFilters.period : undefined,
+      sortBy: detailedFilters.sortBy,
+      sortOrder: detailedFilters.sortOrder,
+      page: detailedFilters.page,
+      limit: detailedFilters.limit
+    }),
+    {
+      enabled: activeTab === 'detailed'
+    }
+  );
 
   // Fetch affiliate analytics
   const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery(
@@ -55,10 +83,11 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
 
   // Fetch affiliate links
   const { data: linksData, isLoading: linksLoading, refetch: refetchLinks } = useQuery(
-    ['affiliateLinks', filters],
+    ['affiliateLinks', filters, page, limit],
     () => apiService.getAffiliateLinks({
       type: filters.type !== 'all' ? filters.type : undefined,
-      status: filters.status !== 'all' ? filters.status : undefined
+      page,
+      limit
     })
   );
 
@@ -95,7 +124,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
     return () => clearTimeout(timeoutId);
   }, [userSearchQuery]);
 
-  const handleGenerateLink = async (type: 'elite_gift' | 'influencer', data: LinkGenerationData) => {
+  const handleGenerateLink = async (type: 'elite_gift' | 'influencer_referral', data: LinkGenerationData) => {
     try {
       let link: AffiliateLink;
       if (type === 'elite_gift') {
@@ -103,14 +132,14 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
       } else {
         link = await apiService.generateInfluencerLink(data);
       }
-      
+
       // Validate the link has a deepLink
       if (!link.deepLink) {
         console.error('Generated link is missing deepLink field:', link);
         alert('Error: Generated link is missing the URL. Please try again or contact support.');
         return;
       }
-      
+
       console.log('Link generated successfully with deepLink:', link.deepLink);
       setGeneratedLink(link);
       setShowLinkModal(true);
@@ -182,11 +211,8 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
       const searchTerm = filters.search.toLowerCase();
       return (
         link.metadata?.description?.toLowerCase().includes(searchTerm) ||
-        (typeof link.influencerId === 'string' 
-          ? link.influencerId.toLowerCase().includes(searchTerm)
-          : (link.influencerId as any)?.name?.toLowerCase().includes(searchTerm) ||
-            (link.influencerId as any)?.email?.toLowerCase().includes(searchTerm)
-        )
+        link.influencerId?.name?.toLowerCase().includes(searchTerm) ||
+        link.influencerId?.email?.toLowerCase().includes(searchTerm)
       );
     }
     return true;
@@ -228,6 +254,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'generate', label: 'Generate Links', icon: Plus },
             { id: 'links', label: 'Manage Links', icon: LinkIcon },
+            { id: 'detailed', label: 'Detailed View', icon: List },
             { id: 'analytics', label: 'Analytics', icon: TrendingUp }
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -277,7 +304,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
               />
               <StatCard
                 title="Total Links"
-                value={analytics?.summary.totalLinks || 0}
+                value={linksData?.pagination?.total || linksData?.links?.length || 0}
                 description="Generated links"
                 trend={{ value: 3, isPositive: true }}
                 icon={<LinkIcon className="h-5 w-5" />}
@@ -285,7 +312,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
               />
               <StatCard
                 title="Active Links"
-                value={analytics?.summary.activeLinks || 0}
+                value={linksData?.links?.filter(l => l.isActive).length || 0}
                 description="Currently active"
                 trend={{ value: 1, isPositive: true }}
                 icon={<CheckCircle className="h-5 w-5" />}
@@ -307,7 +334,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                 <CardContent>
                   <div className="space-y-md">
                     {linksData?.links?.slice(0, 5).map((link) => (
-                      <div key={link._id || link.id} className="flex items-center justify-between p-md bg-muted/30 rounded-lg">
+                      <div key={link._id} className="flex items-center justify-between p-md bg-muted/30 rounded-lg">
                         <div className="flex items-center gap-md flex-1">
                           <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                             link.type === 'elite_gift' ? 'bg-blue-100' : 'bg-green-100'
@@ -320,7 +347,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-foreground">
-                              {link.type === 'elite_gift' ? 'Elite Gift Link' : link.influencerName ? link.influencerName : 'User Link'}
+                              {link.type === 'elite_gift' ? 'Elite Gift Link' : link.influencerId?.name ? link.influencerId.name : 'User Link'}
                             </p>
                             {link.metadata?.description && (
                               <p className="text-xs text-muted-foreground italic truncate">
@@ -379,7 +406,7 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
               searchResults={searchResults}
               isSearching={isSearching}
               onSearchChange={setUserSearchQuery}
-              onGenerate={(data) => handleGenerateLink('influencer', data)} 
+              onGenerate={(data) => handleGenerateLink('influencer_referral', data)} 
             />
           </div>
         )}
@@ -388,11 +415,20 @@ export function AffiliateDashboard({ onBack }: AffiliateDashboardProps) {
           <AffiliateLinksTable 
             links={filteredLinks}
             loading={linksLoading}
-            filters={filters}
+            filters={{ ...filters, status: 'active' }}
             onFiltersChange={setFilters}
             onToggleStatus={handleToggleLinkStatus}
             onDeleteLink={handleDeleteLink}
             onCopyLink={copyToClipboard}
+          />
+        )}
+
+        {activeTab === 'detailed' && (
+          <DetailedAffiliateView
+            data={detailedData}
+            loading={detailedLoading}
+            filters={detailedFilters}
+            onFiltersChange={setDetailedFilters}
           />
         )}
 
@@ -766,7 +802,7 @@ function AffiliateLinksTable({
                 </tr>
               ) : (
                 links.map((link) => (
-                  <tr key={link._id || link.id} className="hover:bg-muted/30">
+                  <tr key={link._id} className="hover:bg-muted/30">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge variant={link.type === 'elite_gift' ? 'default' : 'success'}>
                         {link.type === 'elite_gift' ? '🎁 Elite Gift' : '👥 User'}
@@ -774,18 +810,13 @@ function AffiliateLinksTable({
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-foreground">
-                        {link.type === 'influencer' && (link.influencerId || link.influencerName) ? (
+                        {link.type === 'influencer_referral' && link.influencerId ? (
                           <div>
                             <div className="font-medium">
-                              {link.influencerName 
-                                ? `User: ${link.influencerName}`
-                                : typeof link.influencerId === 'string' 
-                                  ? `User ID: ${link.influencerId}` 
-                                  : `User: ${(link.influencerId as any)?.name || 'Unknown'}`
-                              }
+                              User: {link.influencerId.name || 'Unknown'}
                             </div>
-                            {typeof link.influencerId === 'object' && (link.influencerId as any)?.email && (
-                              <div className="text-xs text-muted-foreground">{(link.influencerId as any).email}</div>
+                            {link.influencerId.email && (
+                              <div className="text-xs text-muted-foreground">{link.influencerId.email}</div>
                             )}
                             {link.metadata?.description && (
                               <div className="text-xs text-muted-foreground mt-1 italic">
@@ -840,7 +871,7 @@ function AffiliateLinksTable({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onToggleStatus(link._id || link.id || '')}
+                          onClick={() => onToggleStatus(link._id)}
                           className={link.isActive ? 'text-warning hover:text-warning/80' : 'text-success hover:text-success/80'}
                           title={link.isActive ? 'Deactivate link' : 'Activate link'}
                         >
@@ -850,10 +881,10 @@ function AffiliateLinksTable({
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            const linkName = link.type === 'elite_gift' 
-                              ? 'Elite Gift Link' 
-                              : link.influencerName || 'Influencer Link';
-                            onDeleteLink(link._id || link.id || '', linkName);
+                            const linkName = link.type === 'elite_gift'
+                              ? 'Elite Gift Link'
+                              : link.influencerId?.name || 'Influencer Link';
+                            onDeleteLink(link._id, linkName);
                           }}
                           className="text-destructive hover:text-destructive/80"
                           title="Delete link"
@@ -1032,9 +1063,9 @@ function LinkGeneratedModal({
             <h3 className="text-xl font-bold text-foreground">
               {link.type === 'elite_gift' ? '🎁 Elite Gift Link' : '👥 Influencer Link'} Generated Successfully!
             </h3>
-            {link.influencerName && (
+            {link.influencerId?.name && (
               <p className="text-sm text-muted-foreground mt-1">
-                For: {link.influencerName}
+                For: {link.influencerId.name}
               </p>
             )}
             {link.metadata?.description && (
@@ -1101,6 +1132,294 @@ function LinkGeneratedModal({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Detailed Affiliate View Component
+function DetailedAffiliateView({
+  data,
+  loading,
+  filters,
+  onFiltersChange
+}: {
+  data?: DetailedAffiliateResponse;
+  loading: boolean;
+  filters: {
+    period: string;
+    sortBy: 'conversions' | 'uniqueUsers' | 'conversionRate' | 'usageCount' | 'name';
+    sortOrder: 'asc' | 'desc';
+    page: number;
+    limit: number;
+  };
+  onFiltersChange: (filters: any) => void;
+}) {
+  const [expandedInfluencer, setExpandedInfluencer] = useState<string | null>(null);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading detailed affiliate data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">No data available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-lg">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
+        <StatCard
+          title="Total Influencers"
+          value={data.summary.totalInfluencers}
+          description="With active links"
+          icon={<Users className="h-5 w-5" />}
+          variant="default"
+        />
+        <StatCard
+          title="Total Conversions"
+          value={data.summary.totalConversions}
+          description="Users signed up"
+          icon={<CheckCircle className="h-5 w-5" />}
+          variant="success"
+        />
+        <StatCard
+          title="Unique Users"
+          value={data.summary.totalUniqueUsers}
+          description="Unique signups"
+          icon={<Users className="h-5 w-5" />}
+          variant="default"
+        />
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-lg">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-md">
+            {/* Period Filter */}
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Time Period</label>
+              <select
+                value={filters.period}
+                onChange={(e) => onFiltersChange({ ...filters, period: e.target.value, page: 1 })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+              >
+                <option value="all">All Time</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="90d">Last 90 Days</option>
+                <option value="365d">Last Year</option>
+              </select>
+            </div>
+
+            {/* Sort By */}
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Sort By</label>
+              <select
+                value={filters.sortBy}
+                onChange={(e) => onFiltersChange({ ...filters, sortBy: e.target.value as any, page: 1 })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+              >
+                <option value="conversions">Conversions</option>
+                <option value="uniqueUsers">Unique Users</option>
+                <option value="conversionRate">Conversion Rate</option>
+                <option value="usageCount">Link Usage</option>
+                <option value="name">Name (A-Z)</option>
+              </select>
+            </div>
+
+            {/* Sort Order */}
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Order</label>
+              <select
+                value={filters.sortOrder}
+                onChange={(e) => onFiltersChange({ ...filters, sortOrder: e.target.value as 'asc' | 'desc', page: 1 })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+              >
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </div>
+
+            {/* Results Per Page */}
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Per Page</label>
+              <select
+                value={filters.limit}
+                onChange={(e) => onFiltersChange({ ...filters, limit: parseInt(e.target.value), page: 1 })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Influencers List */}
+      <div className="space-y-md">
+        {data.affiliates.map((affiliate) => (
+          <Card key={affiliate.influencer._id} className="card-hover">
+            <CardContent className="p-lg">
+              {/* Influencer Header */}
+              <div className="flex items-start justify-between mb-md">
+                <div className="flex items-center gap-md flex-1">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    {affiliate.influencer.avatar ? (
+                      <img
+                        src={affiliate.influencer.avatar}
+                        alt={affiliate.influencer.name}
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <Users className="h-6 w-6 text-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground">{affiliate.influencer.name}</h3>
+                    <p className="text-sm text-muted-foreground">{affiliate.influencer.email}</p>
+                    <Badge variant="default" className="mt-1">{affiliate.influencer.plan.toUpperCase()}</Badge>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExpandedInfluencer(
+                    expandedInfluencer === affiliate.influencer._id ? null : affiliate.influencer._id
+                  )}
+                >
+                  {expandedInfluencer === affiliate.influencer._id ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-md">
+                <div className="bg-muted/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Conversions</p>
+                  <p className="text-lg font-bold text-foreground">{affiliate.stats.totalConversions}</p>
+                </div>
+                <div className="bg-muted/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Unique Users</p>
+                  <p className="text-lg font-bold text-foreground">{affiliate.stats.uniqueUsers}</p>
+                </div>
+                <div className="bg-muted/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Conversion Rate</p>
+                  <p className="text-lg font-bold text-foreground">{affiliate.stats.conversionRate.toFixed(1)}%</p>
+                </div>
+                <div className="bg-muted/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Link Uses</p>
+                  <p className="text-lg font-bold text-foreground">{affiliate.affiliateLink.usedCount}</p>
+                </div>
+                <div className="bg-muted/30 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <Badge variant={affiliate.affiliateLink.isActive ? 'success' : 'secondary'}>
+                    {affiliate.affiliateLink.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Plan Breakdown */}
+              <div className="flex items-center gap-md mb-md">
+                <span className="text-sm text-muted-foreground">Plan Distribution:</span>
+                {affiliate.stats.planBreakdown.elite > 0 && (
+                  <Badge variant="default">Elite: {affiliate.stats.planBreakdown.elite}</Badge>
+                )}
+                {affiliate.stats.planBreakdown.pro > 0 && (
+                  <Badge variant="default">Pro: {affiliate.stats.planBreakdown.pro}</Badge>
+                )}
+                {affiliate.stats.planBreakdown.free > 0 && (
+                  <Badge variant="secondary">Free: {affiliate.stats.planBreakdown.free}</Badge>
+                )}
+              </div>
+
+              {/* Expanded View - Conversions List */}
+              {expandedInfluencer === affiliate.influencer._id && (
+                <div className="mt-md pt-md border-t border-border">
+                  <h4 className="font-semibold text-foreground mb-md">Converted Users ({affiliate.conversions.length})</h4>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {affiliate.conversions.map((conversion) => (
+                      <div key={conversion._id} className="flex items-center justify-between p-md bg-muted/20 rounded-lg">
+                        <div className="flex items-center gap-md flex-1">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            {conversion.avatar ? (
+                              <img
+                                src={conversion.avatar}
+                                alt={conversion.name}
+                                className="h-8 w-8 rounded-full object-cover"
+                              />
+                            ) : (
+                              <Users className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-foreground">{conversion.name}</p>
+                            <p className="text-xs text-muted-foreground">{conversion.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-md">
+                          <div className="text-right">
+                            <Badge variant="default" className="mb-1">
+                              {conversion.signupPlan === conversion.currentPlan
+                                ? conversion.currentPlan.toUpperCase()
+                                : `${conversion.signupPlan.toUpperCase()} → ${conversion.currentPlan.toUpperCase()}`
+                              }
+                            </Badge>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(conversion.signupDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {data.pagination.pages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={filters.page === 1}
+            onClick={() => onFiltersChange({ ...filters, page: filters.page - 1 })}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {filters.page} of {data.pagination.pages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={filters.page === data.pagination.pages}
+            onClick={() => onFiltersChange({ ...filters, page: filters.page + 1 })}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

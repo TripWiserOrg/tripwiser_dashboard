@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { ApiResponse, PlatformStats, User, Trip, AffiliateLink, AffiliateAnalytics, LinkGenerationData } from '../types';
+import { ApiResponse, PlatformStats, User, Trip, AffiliateLink, AffiliateAnalytics, LinkGenerationData, DetailedAffiliateResponse } from '../types';
 import { firebaseAuthService } from './firebaseAuth';
 
 class ApiService {
@@ -271,11 +271,12 @@ class ApiService {
     return link;
   }
 
-  async getAffiliateLinks(filters: { type?: string; status?: string } = {}): Promise<{ links: AffiliateLink[]; pagination: any }> {
+  async getAffiliateLinks(filters: { type?: string; page?: number; limit?: number } = {}): Promise<{ links: AffiliateLink[]; pagination: any }> {
     const queryParams = new URLSearchParams();
     if (filters.type) queryParams.append('type', filters.type);
-    if (filters.status) queryParams.append('status', filters.status);
-    
+    if (filters.page) queryParams.append('page', filters.page.toString());
+    if (filters.limit) queryParams.append('limit', filters.limit.toString());
+
     const response = await this.api.get<ApiResponse<{ links: AffiliateLink[]; pagination: any }>>(`/admin/affiliate/links?${queryParams}`);
     return response.data.data;
   }
@@ -303,6 +304,27 @@ class ApiService {
   async searchUsers(query: string): Promise<User[]> {
     const response = await this.api.get<ApiResponse<{ users: User[] }>>(`/users/search?q=${encodeURIComponent(query)}`);
     return response.data.data.users;
+  }
+
+  async getDetailedAffiliateData(options: {
+    period?: string;
+    sortBy?: 'conversions' | 'uniqueUsers' | 'conversionRate' | 'usageCount' | 'name';
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  } = {}): Promise<DetailedAffiliateResponse> {
+    const params = new URLSearchParams();
+
+    if (options.period) params.append('period', options.period);
+    if (options.sortBy) params.append('sortBy', options.sortBy);
+    if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+    if (options.page) params.append('page', options.page.toString());
+    if (options.limit) params.append('limit', options.limit.toString());
+
+    console.log('Fetching detailed affiliate data with params:', options);
+    const response = await this.api.get<ApiResponse<DetailedAffiliateResponse>>(`/admin/affiliate/detailed?${params}`);
+    console.log('Detailed affiliate data response:', response.data);
+    return response.data.data;
   }
 }
 
