@@ -151,23 +151,28 @@ export interface LinkGenerationData {
 // Detailed Affiliate Analytics Types
 export interface ConversionUser {
   _id: string;
-  name: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    avatar: string;
+    currentPlan: 'free' | 'pro' | 'elite';
+    accountCreated: string;
+  } | null;
+  plan: 'free' | 'pro' | 'elite';
+  convertedAt: string;
   email: string;
-  avatar?: string;
-  signupPlan: 'free' | 'pro' | 'elite';
-  currentPlan: 'free' | 'pro' | 'elite';
-  signupDate: string;
 }
 
 export interface DetailedAffiliateStats {
   totalConversions: number;
   uniqueUsers: number;
   planBreakdown: {
-    free: number;
-    pro: number;
-    elite: number;
+    free?: number;
+    pro?: number;
+    elite?: number;
   };
-  conversionRate: number;
+  conversionRate: number | string;
 }
 
 export interface DetailedAffiliateData {

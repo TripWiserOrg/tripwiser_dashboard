@@ -1291,7 +1291,7 @@ function DetailedAffiliateView({
                   <div className="flex-1">
                     <h3 className="font-semibold text-foreground">{affiliate.influencer.name}</h3>
                     <p className="text-sm text-muted-foreground">{affiliate.influencer.email}</p>
-                    <Badge variant="default" className="mt-1">{affiliate.influencer.plan.toUpperCase()}</Badge>
+                    <Badge variant="default" className="mt-1">{affiliate.influencer.plan?.toUpperCase()}</Badge>
                   </div>
                 </div>
                 <Button
@@ -1321,7 +1321,12 @@ function DetailedAffiliateView({
                 </div>
                 <div className="bg-muted/30 p-3 rounded-lg">
                   <p className="text-xs text-muted-foreground mb-1">Conversion Rate</p>
-                  <p className="text-lg font-bold text-foreground">{affiliate.stats.conversionRate.toFixed(1)}%</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {typeof affiliate.stats.conversionRate === 'string'
+                      ? `${affiliate.stats.conversionRate}%`
+                      : `${affiliate.stats.conversionRate}%`
+                    }
+                  </p>
                 </div>
                 <div className="bg-muted/30 p-3 rounded-lg">
                   <p className="text-xs text-muted-foreground mb-1">Link Uses</p>
@@ -1338,13 +1343,13 @@ function DetailedAffiliateView({
               {/* Plan Breakdown */}
               <div className="flex items-center gap-md mb-md">
                 <span className="text-sm text-muted-foreground">Plan Distribution:</span>
-                {affiliate.stats.planBreakdown.elite > 0 && (
+                {(affiliate.stats.planBreakdown.elite || 0) > 0 && (
                   <Badge variant="default">Elite: {affiliate.stats.planBreakdown.elite}</Badge>
                 )}
-                {affiliate.stats.planBreakdown.pro > 0 && (
+                {(affiliate.stats.planBreakdown.pro || 0) > 0 && (
                   <Badge variant="default">Pro: {affiliate.stats.planBreakdown.pro}</Badge>
                 )}
-                {affiliate.stats.planBreakdown.free > 0 && (
+                {(affiliate.stats.planBreakdown.free || 0) > 0 && (
                   <Badge variant="secondary">Free: {affiliate.stats.planBreakdown.free}</Badge>
                 )}
               </div>
@@ -1358,10 +1363,10 @@ function DetailedAffiliateView({
                       <div key={conversion._id} className="flex items-center justify-between p-md bg-muted/20 rounded-lg">
                         <div className="flex items-center gap-md flex-1">
                           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            {conversion.avatar ? (
+                            {conversion.user?.avatar ? (
                               <img
-                                src={conversion.avatar}
-                                alt={conversion.name}
+                                src={conversion.user.avatar}
+                                alt={conversion.user.name}
                                 className="h-8 w-8 rounded-full object-cover"
                               />
                             ) : (
@@ -1369,20 +1374,24 @@ function DetailedAffiliateView({
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-foreground">{conversion.name}</p>
+                            <p className="text-sm font-medium text-foreground">
+                              {conversion.user?.name || 'Unknown User'}
+                            </p>
                             <p className="text-xs text-muted-foreground">{conversion.email}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-md">
                           <div className="text-right">
                             <Badge variant="default" className="mb-1">
-                              {conversion.signupPlan === conversion.currentPlan
-                                ? conversion.currentPlan.toUpperCase()
-                                : `${conversion.signupPlan.toUpperCase()} → ${conversion.currentPlan.toUpperCase()}`
+                              {conversion.user?.currentPlan
+                                ? (conversion.plan === conversion.user.currentPlan
+                                    ? conversion.user.currentPlan.toUpperCase()
+                                    : `${conversion.plan.toUpperCase()} → ${conversion.user.currentPlan.toUpperCase()}`)
+                                : conversion.plan.toUpperCase()
                               }
                             </Badge>
                             <p className="text-xs text-muted-foreground">
-                              {new Date(conversion.signupDate).toLocaleDateString()}
+                              {new Date(conversion.convertedAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
