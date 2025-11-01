@@ -7,17 +7,18 @@ import { Button } from './ui/Button';
 import { apiService } from '../services/api';
 import { AffiliateDashboard } from './AffiliateDashboard';
 import { User } from '../types';
-import { 
-  Users, 
-  MapPin, 
-  DollarSign, 
-  Activity, 
+import {
+  Users,
+  MapPin,
+  DollarSign,
+  Activity,
   TrendingUp,
   AlertTriangle,
   CheckCircle,
   Clock,
   Globe,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Target
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -42,6 +43,12 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
   const { data: paymentOverview } = useQuery(
     'paymentOverview',
     () => apiService.getPaymentOverview()
+  );
+
+  // Fetch attribution overview
+  const { data: attributionOverview } = useQuery(
+    'attributionOverviewWidget',
+    () => apiService.getAttributionOverview(7) // Last 7 days
   );
 
   // Debug logging
@@ -318,6 +325,56 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
                   <span className="text-sm font-medium">System Logs</span>
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Attribution System Overview */}
+        <div className="mb-2xl">
+          <Card className="card-hover">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-sm">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Target className="h-4 w-4 text-primary" />
+                </div>
+                Attribution System (Last 7 Days)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {attributionOverview ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Clicks</p>
+                    <p className="text-2xl font-bold mt-1">{attributionOverview.stats?.totalClicks || 0}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Elite: {attributionOverview.stats?.eliteGiftClicks || 0} | Influencer: {attributionOverview.stats?.influencerClicks || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Matched</p>
+                    <p className="text-2xl font-bold mt-1 text-success">{attributionOverview.stats?.matchedClicks || 0}</p>
+                    <div className="w-full bg-muted rounded-full h-2 mt-2">
+                      <div
+                        className="bg-success h-2 rounded-full"
+                        style={{ width: `${attributionOverview.stats?.matchRate || 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Match Rate</p>
+                    <p className="text-2xl font-bold mt-1">
+                      {attributionOverview.stats?.matchRate || '0'}%
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {attributionOverview.stats?.unmatchedClicks || 0} pending
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">Loading attribution data...</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

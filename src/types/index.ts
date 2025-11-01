@@ -196,3 +196,70 @@ export interface DetailedAffiliateResponse {
     totalUniqueUsers: number;
   };
 }
+
+/**
+ * Attribution System Types
+ */
+
+export interface AttributionStats {
+  totalClicks: number;
+  matchedClicks: number;
+  unmatchedClicks: number;
+  eliteGiftClicks: number;
+  influencerClicks: number;
+  matchRate: string;
+}
+
+export interface AttributionClick {
+  _id: string;
+  fingerprint: string;
+  fingerprintData: {
+    platform: 'iOS' | 'Android' | 'Web' | 'Unknown';
+    osVersion: string;
+    deviceModel: string;
+    screenResolution: string;
+    timezone: string;
+    language: string;
+    userAgent: string;
+    ipHash: string;
+  };
+  affiliateType: 'elite_gift' | 'influencer_referral';
+  influencerId?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  linkId?: string;
+  clickedAt: string;
+  matched: boolean;
+  matchedAt?: string;
+  matchedUserId?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface UpgradeAnalysis {
+  totalReferrals: number;
+  planDistribution: {
+    elite: number;
+    pro: number;
+    free: number;
+  };
+  upgrades: {
+    freeToElite: number;
+    freeToPro: number;
+    proToElite: number;
+    stillAtOriginalPlan: number;
+  };
+  upgradeRate: string;
+  users: Array<{
+    userId: string;
+    email: string;
+    initialPlan: string;
+    currentPlan: string;
+    upgraded: boolean;
+    convertedAt: string;
+  }>;
+}

@@ -326,6 +326,86 @@ class ApiService {
     console.log('Detailed affiliate data response:', response.data);
     return response.data.data;
   }
+
+  /**
+   * Get attribution system overview
+   */
+  async getAttributionOverview(days: number = 30): Promise<{
+    stats: {
+      totalClicks: number;
+      matchedClicks: number;
+      unmatchedClicks: number;
+      eliteGiftClicks: number;
+      influencerClicks: number;
+      matchRate: string;
+    };
+    topLinks: Array<{ _id: string; conversions: number }>;
+    period: { startDate: string; endDate: string; days: number };
+  }> {
+    const response = await this.api.get<ApiResponse<any>>(
+      `/admin/attribution/overview?days=${days}`
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Get attribution clicks (paginated)
+   */
+  async getAttributionClicks(params: {
+    page?: number;
+    limit?: number;
+    matched?: boolean;
+  }): Promise<{
+    clicks: Array<any>;
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.matched !== undefined) queryParams.append('matched', params.matched.toString());
+
+    const response = await this.api.get<ApiResponse<any>>(
+      `/admin/attribution/clicks?${queryParams.toString()}`
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Get upgrade analysis for an influencer
+   */
+  async getInfluencerUpgradeAnalysis(influencerId: string): Promise<{
+    totalReferrals: number;
+    planDistribution: {
+      elite: number;
+      pro: number;
+      free: number;
+    };
+    upgrades: {
+      freeToElite: number;
+      freeToPro: number;
+      proToElite: number;
+      stillAtOriginalPlan: number;
+    };
+    upgradeRate: string;
+    users: Array<{
+      userId: string;
+      email: string;
+      initialPlan: string;
+      currentPlan: string;
+      upgraded: boolean;
+      convertedAt: string;
+    }>;
+  }> {
+    const response = await this.api.get<ApiResponse<any>>(
+      `/affiliate/influencer/${influencerId}/upgrade-analysis`
+    );
+    return response.data.data;
+  }
 }
 
 export const apiService = new ApiService();
