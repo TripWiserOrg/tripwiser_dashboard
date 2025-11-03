@@ -6,6 +6,7 @@ import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { apiService } from '../services/api';
 import { AffiliateDashboard } from './AffiliateDashboard';
+import { UserManagement } from './UserManagement';
 import { User } from '../types';
 import {
   Users,
@@ -26,8 +27,10 @@ interface DashboardProps {
   onLogout?: () => void;
 }
 
+type DashboardView = 'main' | 'affiliate' | 'users';
+
 export function Dashboard({ currentUser, onLogout }: DashboardProps) {
-  const [showAffiliateDashboard, setShowAffiliateDashboard] = useState(false);
+  const [currentView, setCurrentView] = useState<DashboardView>('main');
 
   const { data: platformStats, isLoading, error } = useQuery(
     'platformStats',
@@ -45,10 +48,10 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
     () => apiService.getPaymentOverview()
   );
 
-  // Fetch attribution overview
-  const { data: attributionOverview } = useQuery(
-    'attributionOverviewWidget',
-    () => apiService.getAttributionOverview(7) // Last 7 days
+  // Fetch affiliate stats for conversion tracking
+  const { data: affiliateStats } = useQuery(
+    'affiliateStatsWidget',
+    () => apiService.getAffiliateStats({}) // Last 30 days by default
   );
 
   // Debug logging
@@ -102,8 +105,13 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
   };
 
 
-  if (showAffiliateDashboard) {
-    return <AffiliateDashboard onBack={() => setShowAffiliateDashboard(false)} />;
+  // Handle different views
+  if (currentView === 'affiliate') {
+    return <AffiliateDashboard onBack={() => setCurrentView('main')} />;
+  }
+
+  if (currentView === 'users') {
+    return <UserManagement onBack={() => setCurrentView('main')} />;
   }
 
   if (isLoading) {
@@ -296,16 +304,20 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-md">
-                <Button variant="outline" className="h-auto p-lg flex flex-col items-center gap-sm hover:bg-primary/5 hover:border-primary/20">
+                <Button
+                  variant="outline"
+                  className="h-auto p-lg flex flex-col items-center gap-sm hover:bg-primary/5 hover:border-primary/20"
+                  onClick={() => setCurrentView('users')}
+                >
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Users className="h-5 w-5 text-primary" />
                   </div>
                   <span className="text-sm font-medium">Manage Users</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-auto p-lg flex flex-col items-center gap-sm hover:bg-primary/5 hover:border-primary/20"
-                  onClick={() => setShowAffiliateDashboard(true)}
+                  onClick={() => setCurrentView('affiliate')}
                 >
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <LinkIcon className="h-5 w-5 text-primary" />
@@ -314,9 +326,9 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
                 </Button>
                 <Button variant="outline" className="h-auto p-lg flex flex-col items-center gap-sm hover:bg-warning/5 hover:border-warning/20">
                   <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                    <Globe className="h-5 w-5 text-warning" />
+                    <MapPin className="h-5 w-5 text-warning" />
                   </div>
-                  <span className="text-sm font-medium">Moderate Content</span>
+                  <span className="text-sm font-medium">Manage Trips</span>
                 </Button>
                 <Button variant="outline" className="h-auto p-lg flex flex-col items-center gap-sm hover:bg-success/5 hover:border-success/20">
                   <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
@@ -329,7 +341,7 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
           </Card>
         </div>
 
-        {/* Attribution System Overview */}
+        {/* Conversion Tracking Overview */}
         <div className="mb-2xl">
           <Card className="card-hover">
             <CardHeader>
@@ -337,42 +349,39 @@ export function Dashboard({ currentUser, onLogout }: DashboardProps) {
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Target className="h-4 w-4 text-primary" />
                 </div>
-                Attribution System (Last 7 Days)
+                Conversion Tracking (Last 30 Days)
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {attributionOverview ? (
+              {affiliateStats ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Clicks</p>
-                    <p className="text-2xl font-bold mt-1">{attributionOverview.stats?.totalClicks || 0}</p>
+                    <p className="text-sm text-muted-foreground">Elite Gift Conversions</p>
+                    <p className="text-2xl font-bold mt-1 text-warning">{affiliateStats.summary?.totalEliteGifts || 0}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Elite: {attributionOverview.stats?.eliteGiftClicks || 0} | Influencer: {attributionOverview.stats?.influencerClicks || 0}
+                      Premium subscriptions granted
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Matched</p>
-                    <p className="text-2xl font-bold mt-1 text-success">{attributionOverview.stats?.matchedClicks || 0}</p>
-                    <div className="w-full bg-muted rounded-full h-2 mt-2">
-                      <div
-                        className="bg-success h-2 rounded-full"
-                        style={{ width: `${attributionOverview.stats?.matchRate || 0}%` }}
-                      ></div>
-                    </div>
+                    <p className="text-sm text-muted-foreground">Influencer Referrals</p>
+                    <p className="text-2xl font-bold mt-1 text-success">{affiliateStats.summary?.totalInfluencerReferrals || 0}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      From {affiliateStats.summary?.uniqueInfluencers || 0} influencers
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Match Rate</p>
-                    <p className="text-2xl font-bold mt-1">
-                      {attributionOverview.stats?.matchRate || '0'}%
+                    <p className="text-sm text-muted-foreground">Total Conversions</p>
+                    <p className="text-2xl font-bold mt-1 text-primary">
+                      {(affiliateStats.summary?.totalEliteGifts || 0) + (affiliateStats.summary?.totalInfluencerReferrals || 0)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {attributionOverview.stats?.unmatchedClicks || 0} pending
+                      Across all channels
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground">Loading attribution data...</p>
+                  <p className="text-sm text-muted-foreground">Loading conversion data...</p>
                 </div>
               )}
             </CardContent>

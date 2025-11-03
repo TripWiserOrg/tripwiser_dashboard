@@ -328,35 +328,16 @@ class ApiService {
   }
 
   /**
-   * Get attribution system overview
+   * Get affiliate conversions (replacement for attribution system)
    */
-  async getAttributionOverview(days: number = 30): Promise<{
-    stats: {
-      totalClicks: number;
-      matchedClicks: number;
-      unmatchedClicks: number;
-      eliteGiftClicks: number;
-      influencerClicks: number;
-      matchRate: string;
-    };
-    topLinks: Array<{ _id: string; conversions: number }>;
-    period: { startDate: string; endDate: string; days: number };
-  }> {
-    const response = await this.api.get<ApiResponse<any>>(
-      `/admin/attribution/overview?days=${days}`
-    );
-    return response.data.data;
-  }
-
-  /**
-   * Get attribution clicks (paginated)
-   */
-  async getAttributionClicks(params: {
+  async getAffiliateConversions(params: {
     page?: number;
     limit?: number;
-    matched?: boolean;
-  }): Promise<{
-    clicks: Array<any>;
+    type?: 'elite_gift' | 'influencer_referral';
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<{
+    conversions: Array<any>;
     pagination: {
       page: number;
       limit: number;
@@ -367,42 +348,67 @@ class ApiService {
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.append('page', params.page.toString());
     if (params.limit) queryParams.append('limit', params.limit.toString());
-    if (params.matched !== undefined) queryParams.append('matched', params.matched.toString());
+    if (params.type) queryParams.append('type', params.type);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
 
     const response = await this.api.get<ApiResponse<any>>(
-      `/admin/attribution/clicks?${queryParams.toString()}`
+      `/affiliate/conversions?${queryParams.toString()}`
     );
     return response.data.data;
   }
 
   /**
-   * Get upgrade analysis for an influencer
+   * Get affiliate stats (includes conversion analytics)
    */
-  async getInfluencerUpgradeAnalysis(influencerId: string): Promise<{
-    totalReferrals: number;
-    planDistribution: {
-      elite: number;
-      pro: number;
-      free: number;
+  async getAffiliateStats(params: {
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<{
+    period: { startDate: string; endDate: string };
+    summary: {
+      totalEliteGifts: number;
+      totalInfluencerReferrals: number;
+      uniqueInfluencers: number;
     };
-    upgrades: {
-      freeToElite: number;
-      freeToPro: number;
-      proToElite: number;
-      stillAtOriginalPlan: number;
-    };
-    upgradeRate: string;
-    users: Array<{
-      userId: string;
-      email: string;
-      initialPlan: string;
-      currentPlan: string;
-      upgraded: boolean;
-      convertedAt: string;
-    }>;
+    analytics: Array<any>;
   }> {
+    const queryParams = new URLSearchParams();
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+
     const response = await this.api.get<ApiResponse<any>>(
-      `/affiliate/influencer/${influencerId}/upgrade-analysis`
+      `/affiliate/stats?${queryParams.toString()}`
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Get influencer performance statistics
+   */
+  async getInfluencerStats(params: {
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+  } = {}): Promise<{
+    influencerStats: Array<{
+      influencerId: string;
+      influencerName: string;
+      influencerEmail: string;
+      totalReferrals: number;
+      uniqueUsers: number;
+      firstReferral: string;
+      lastReferral: string;
+    }>;
+    period: { startDate?: string; endDate?: string };
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+
+    const response = await this.api.get<ApiResponse<any>>(
+      `/affiliate/influencer-stats?${queryParams.toString()}`
     );
     return response.data.data;
   }
